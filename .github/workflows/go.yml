@@ -16,6 +16,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install ginkgo
+      run: |
+        go install github.com/onsi/ginkgo/v2/ginkgo
+        go get github.com/onsi/gomega/...
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
