@@ -1,4 +1,4 @@
-# KubeClipper Code of Conduct
+# OpenHydra Code of Conduct
 
 ## Best Practices of Committing Code
 
