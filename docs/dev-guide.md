@@ -29,14 +29,14 @@ spec:
 $ kubectl exec -it my-pod -- bash
 
 # create mysql cluster with operator
-$ kubectl apply -f asserts/mysql-deploy-crds.yaml
-$ kubectl apply -f asserts/mysql-deploy-operator.yaml
+$ kubectl apply -f deploy/mysql-operator-crds.yaml
+$ kubectl apply -f deploy/mysql-operator.yaml
 
 # ensure mysql operator it's ready
 # then create mysql cluster
-$ kubectl apply -f asserts/mysql-aio-cluster.yaml
+$ kubectl apply -f deploy/mysql-instance.yaml
 
-# 检查是否都启动成功了
+# check see if mysql cluster is ready
 $ kubectl get pods -n mysql-operator 
 NAME                                READY   STATUS    RESTARTS   AGE
 mycluster-0                         2/2     Running   0          18h
@@ -49,20 +49,26 @@ $ kubectl expose pod mycluster-0 -n mysql-operator --type=NodePort
 $ mkdir .open-hydra-server
 $ cd .open-hydra-server
 $ vi config.yaml
-# 输入以下内容
-podAllocatableLimit: -1
-defaultCpuPerDevice: 2
-defaultRamPerDevice: 8192
-defaultGpuPerDevice: 0
-datasetBasePath: /open-hydra/public-dataset
-datasetVolumeType: hostpath
-datasetStudentMountPath: /root/public-dataset
+# input following setting
+podAllocatableLimit: -1 # not pod limit is set will use pod limit of k8s node by default
+defaultCpuPerDevice: 2000 # cpu per pod default 2
+defaultRamPerDevice: 8192 # memory per pod default 8Gi
+defaultGpuPerDevice: 0 # gpu per pod default 0, keep it 0 unless you have tons of gpus
+datasetBasePath: /mnt/public-dataset # where dataset keep on server dir
+datasetVolumeType: hostpath # so far we only support hostpath
+jupyterLabHostBaseDir: /mnt/jupyter-lab # where user custom code of jupyter-lab on server dir
+imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18"
+vscodeImageRepo: "docker.io/99cloud/vscode:1.85.1"
+defaultGpuDriver: nvidia.com/gpu
+serverIP: "172.16.151.70"
+patchResourceNotRelease: true
+disableAuth: true
 mysqlConfig:
-  address: 10.0.0.1 # 修改为你的mysql地址
-  port: 3306 # 修改为你的mysql端口
-  username: root # 修改为你的mysql用户名
-  password: root # 修改为你的mysql密码
-  databaseName: open-hydra
+  address: mycluster-instances.mysql-operator.svc
+  port: 3306
+  username: root
+  password: 99cloud
+  databaseName: openhydra
   protocol: tcp
 leaderElection:
   leaderElect: false
@@ -71,7 +77,7 @@ leaderElection:
   retryPeriod: 5s
   resourceLock: endpointsleases
   resourceName: open-hydra-api-leader-lock
-  resourceNamespace: default
+  resourceNamespace: open-hydra
 
 
 # debug it
@@ -79,9 +85,9 @@ leaderElection:
 
 ```
 
-## db create table
+## db create table(option)
 
-目前由于项目比较简单，我们暂时不使用orm，直接使用sql语句操作数据库
+* It's ok not to create table manually, table will be created automatically when you start the server by `mysql.go`
 
 ```sql
 # 创建 user 表
@@ -107,8 +113,8 @@ $ curl -k --location -XPOST 'https://localhost:10443/apis/open-hydra-server.open
         "name": "user1"
     },
     "spec": {
-        "chineseName": "第一个学员",
-        "description": "student1",
+        "chineseName": "first user,
+        "description": "user1",
         "password": "password",
         "email": "student1@gmail.com",
         "role": 1
@@ -170,20 +176,20 @@ curl -k --location 'https://localhost:10443/apis/open-hydra-server.openhydra.io/
 
 ```bash
 # when 'disableAuth' set to 'true' you can use kubectl to manage everything
-$ vi user1.yaml
+$ vi user2.yaml
 apiVersion: open-hydra-server.openhydra.io/v1
 kind: OpenHydraUser
 metadata:
-  name: student2
+  name: user2
 spec:
-  chineseName: 第二个学员
-  description: student2
-  email: student2@gmail.com
+  chineseName: 2nd users
+  description: user2
+  email: user2@gmail.com
   password: password
   role: 2
 
 # create user
-$ kubectl apply -f user1.yaml
+$ kubectl apply -f user2.yaml
 # list user
 $ kubectl get openhydrausers
 
@@ -192,11 +198,11 @@ $ vi device1.yaml
 apiVersion: open-hydra-server.openhydra.io/v1
 kind: Device
 metadata:
-  name: student2-device
+  name: user2
 spec:
-  studentName: student2
+  studentName: user2
 
-# create device for sutdent2
+# create device for user2
 $ kubectl create -f device1.yaml
 
 # list device
@@ -205,36 +211,28 @@ $ kubectl get devices
 
 ## reverse proxy
 
-有时为了快速演示或者一体机相对安全情况下，我们可以不需要后台，直接使用反向代理暴露 apiserver 给到前端
+deploy a reverse proxy to access open-hydra-server api directly but not secure, you should use it in your local environment
 
 ```bash
-# 部署反向代理
+# deploy reverse proxy
 $ kubectl create -f deploy/reverse-proxy.yaml
 
-# 检查
+# check it
 $ kubectl get svc -n open-hydra
 NAME            TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
 reverse-proxy   ClusterIp  10.98.192.222   <none>        80:80/TCP      1m
 
-# 集群 pod 访问
+# check reverse proxy working
 $ curl http://reverse-proxy.open-hydra.svc/api/apis
 
-# 集群外访问
+# check it over cluster ip
 $ curl http://10.98.192.222/api/apis
 ```
 
-## 提交代码
+## code commit
 
-大家尽力编写单元测试，保证代码质量， 目前人手不足可以不编写，但是你的写的方法应该是尽可能被单元测试的
+* Please see [code of conduct](../code-of-conduct.md) before you commit your code
 
-* ginkgo 框架已经在代码里有了，可以直接使用
-* make test-all && make fmt 应被执行在你的提交代码之前
-* 请使用 gerrit 代码提交彼此 review
+## modify api
 
-## how to add a new api
-
-* add a new api in pkg/apis/open-hydra-api/{new-api-name}/v1
-* create a deepcopy and register-gen make command
-* call it to generate the code
-* add pkg/apis/open-hydra-api/{new-api-name}/v1 to `update-openapi` in Makefile
-* make update-openapi
+* After you modify you api property you should always run `make update-openapi` to update you openapi spec
