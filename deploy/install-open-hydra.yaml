@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: open-hydra-admin
+  namespace: open-hydra
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: open-hydra-cluster-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: open-hydra-admin
+  namespace: open-hydra
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: open-hydra-kube-system
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: open-hydra-admin
+  namespace: open-hydra
+
+---
+
+apiVersion: v1
+data:
+  config.yaml: |
+    podAllocatableLimit: -1
+    defaultCpuPerDevice: 2000
+    defaultRamPerDevice: 8192
+    defaultGpuPerDevice: 0
+    datasetBasePath: /mnt/public-dataset
+    datasetVolumeType: hostpath
+    jupyterLabHostBaseDir: /mnt/jupyter-lab
+    imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18"
+    vscodeImageRepo: "docker.io/99cloud/vscode:1.85.1"
+    defaultGpuDriver: nvidia.com/gpu
+    serverIP: "localhost"
+    patchResourceNotRelease: true
+    disableAuth: true
+    mysqlConfig:
+      address: mycluster-instances.mysql-operator.svc
+      port: 3306
+      username: root
+      password: 99cloud
+      databaseName: openhydra
+      protocol: tcp
+    leaderElection:
+      leaderElect: false
+      leaseDuration: 30s
+      renewDeadline: 15s
+      retryPeriod: 5s
+      resourceLock: endpointsleases
+      resourceName: open-hydra-api-leader-lock
+      resourceNamespace: default
+kind: ConfigMap
+metadata:
+  name: open-hydra-config
+  namespace: open-hydra
+
+---
+
+# deployment that mount configmap open-hydra-config to /etc/open-hydra/config.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-hydra-server
+  namespace: open-hydra
+  labels:
+    app: open-hydra-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-hydra-api
+  template:
+    metadata:
+      labels:
+        app: open-hydra-api
+    spec:
+      serviceAccountName: open-hydra-admin
+      containers:
+      - name: open-hydra-api
+        image: docker.io/99cloud/open-hydra-server:latest
+        imagePullPolicy: IfNotPresent
+        command: ["open-hydra-server", "run","--open-hydra-server-config", "/etc/open-hydra/config.yaml"]
+        ports:
+        - containerPort: 443
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: open-hydra-config
+          mountPath: /etc/open-hydra/config.yaml
+          subPath: config.yaml
+        - name: dataset
+          mountPath: /mnt/public-dataset
+          mountPropagation: Bidirectional
+        - name: course
+          mountPath: /mnt/public-course
+          mountPropagation: Bidirectional
+      volumes:
+      - name: open-hydra-config
+        configMap:
+          name: open-hydra-config
+          items:
+          - key: config.yaml
+            path: config.yaml
+      - name: dataset
+        hostPath:
+          # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
+          path: /mnt/public-dataset
+          type: Directory
+      - name: course
+        hostPath:
+          # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
+          path: /mnt/public-course
+          type: Directory
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-hydra-server
+  namespace: open-hydra
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+  selector:
+    app: open-hydra-api
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.open-hydra-server.openhydra.io
+spec:
+  group: open-hydra-server.openhydra.io
+  groupPriorityMinimum: 1000
+  insecureSkipTLSVerify: true
+  service:
+    name: open-hydra-server
+    namespace: open-hydra
+    port: 443
+  version: v1
+  versionPriority: 15

@@ -1,0 +1,9 @@
+apiVersion: open-hydra-server.openhydra.io/v1
+kind: OpenHydraUser
+metadata:
+  name: admin
+spec:
+  chineseName: admin
+  description: admin
+  password: 99cloud
+  role: 1

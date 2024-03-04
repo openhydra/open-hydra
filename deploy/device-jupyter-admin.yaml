@@ -1,0 +1,6 @@
+apiVersion: open-hydra-server.openhydra.io/v1
+kind: Device
+metadata:
+  name: admin
+spec:
+  openHydraUsername: admin

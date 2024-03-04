@@ -1,0 +1,27 @@
+podAllocatableLimit: -1
+defaultCpuPerDevice: 2000
+defaultRamPerDevice: 8192
+defaultGpuPerDevice: 0
+datasetBasePath: /mnt/public-dataset
+datasetVolumeType: hostpath
+datasetStudentMountPath: /root/public-dataset
+jupyterLabHostBaseDir: /mnt/jupyter-lab
+imageRepo: "maas.io/open-hydra/open-hydra:beta-1"
+defaultGpuDriver: ""
+patchResourceNotRelease: true
+serverIP: "localhost"
+mysqlConfig:
+  address: 10.0.0.1
+  port: 3306
+  username: root
+  password: root
+  databaseName: open-hydra
+  protocol: tcp
+leaderElection:
+  leaderElect: false
+  leaseDuration: 30s
+  renewDeadline: 15s
+  retryPeriod: 5s
+  resourceLock: endpointsleases
+  resourceName: open-hydra-api-leader-lock
+  resourceNamespace: default
