@@ -2,6 +2,10 @@
 
 本文档描述了如何使用预先打包好的镜像来安装操作已经 open-hydra 相关的组件
 
+## 下载镜像
+
+* 链接: https://pan.baidu.com/s/1GsHhDEnRMBBUrQXpusmtSA?pwd=uc2e 提取码: uc2e
+
 ## 最小硬件要求
 
 * (optional)nvidia cuda gpu >= 1
