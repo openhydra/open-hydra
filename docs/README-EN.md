@@ -17,23 +17,23 @@ open-hydra is a management platform dedicated to `machine learning|deep learning
     * time slicing share is enabled by default for nvidia gpu -> 1*4
   * `Note we lack of english version of ui for now we suggest to translate the entire ui to english use google translate or other tools`
 
-## open-hydra management component architecture
+## Open-hydra management component architecture
 
 ![open-hydra](../images/arch-01.png)
 
-## open-hydra user component architecture
+## Open-hydra user component architecture
 
 ![open-hydra](../images/arch-02.png)
 
-## quick start
+## Quick start
 
-### use pre-built aio iso image
+### Use pre-built aio iso image
 
 Please refer to [iso installation guide](../docs/iso-installation-guide-en.md)
 
 ### Deploy open-hydra on existing k8s environment
 
-#### before you start
+#### Before you start
 
 * The k8s version tested is 1.23.17. Theoretically it should work on 1.23.17+ versions. If you don't have k8s, you can quickly create one using kubeadm, refer to [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 * If you don't have a gpu, it won't stop you from building the environment, you just can't create an environment with a gpu. If you create an environment with a gpu device, the pod will enter the pending state
@@ -75,7 +75,7 @@ $ mkdir /mnt/public-vscode
 # courseBasePath
 ```
 
-#### deploy open-hydra on existing k8s cluster
+#### Deploy open-hydra on existing k8s cluster
 
 ```bash
 # create a mysql database
@@ -105,9 +105,9 @@ NAME                                SERVICE                        AVAILABLE   A
 v1.open-hydra-server.openhydra.io   open-hydra/open-hydra-server   True        61m
 ```
 
-### use open-hydra
+### Use open-hydra
 
-#### create admin user(optional, skip it if you use iso installation or do not need dashboard)
+#### Create admin user(optional, skip it if you use iso installation or do not need dashboard)
 
 * Note you won't be able to create admin user and other related resources using kubectl if you set `disableAuth: true` when you deploy open-hydra
 
@@ -121,7 +121,7 @@ NAME    AGE
 admin   <unknown>
 ```
 
-#### deploy `open-hydra-ui`(optional, skip it if you use iso installation or do not need dashboard)
+#### Deploy `open-hydra-ui`(optional, skip it if you use iso installation or do not need dashboard)
 
 * Please note `open-hydra-ui` does not have a backend, only html pages and js scripts, so we will start a reverse proxy to proxy the apiserver, which has some security risks, it is not recommended to deploy `open-hydra-ui` in a high security environment, you can implement a backend page yourself, please refer to [api document](docs/api.md)
 
@@ -158,7 +158,7 @@ endpoints/open-hydra-ui   172.25.27.255:80   111m
 # now you should be able to access http://[ip]:30001 with web browser
 ```
 
-#### enable nvidia gpu time slicing share(optional)
+#### Enable nvidia gpu time slicing share(optional)
 
 ```bash
 # create time slicing instance of gpu-operator
@@ -171,7 +171,7 @@ $ kubectl get pod -n gpu-operator -w
 
 ```
 
-#### create a user
+#### Create a user
 
 ```bash
 # role 1 = admin
@@ -195,7 +195,7 @@ NAME    AGE
 user1   <unknown>
 ```
 
-#### create a jupyter lab for user1
+#### Create a jupyter lab for user1
 
 ```bash
 $ cat <<EOF > user1-device.yaml
@@ -219,7 +219,7 @@ user1   http://172.16.151.70:31001   Running
 
 ![open-hydra](images/lab-01.png)
 
-#### shutdown the jupyter lab for user1
+#### Shutdown the jupyter lab for user1
 
 * Note only 1 device either jupyter lab or vscode can be created for a user at the same time
 * Even we delete pod but user data will be remained
@@ -235,7 +235,7 @@ User    LabUrl   Status
 user1   <none>   Terminating
 ```
 
-#### create a vscode for user1
+#### Create a vscode for user1
 
 ```bash
 $ cat <<EOF > user1-device-vscode.yaml
@@ -259,7 +259,7 @@ user1   http://172.16.151.70:30013   Running
 
 ![open-hydra](images/vscode-01.png)
 
-### create a gpu device for user1 with jupyter lab
+### Create a gpu device for user1 with jupyter lab
 
 ```bash
 # delete vscode pod
