@@ -55,11 +55,16 @@ $ kubectl patch storageclass {you storage class name} -p '{"metadata": {"annotat
 
 ```bash
 # 创建一个目录用于存放课程和代码
+# public-dataset 用来存放公共的数据集
 $ mkdir /mnt/public-dataset
+# public-course 用来存放你的课程
+$ mkdir /mnt/public-course
+# jupyter-lab 用来存放用户 jupyter lab 的代码
 $ mkdir /mnt/jupyter-lab
+# public-vscode 用来存放用户 vscode 的代码
 $ mkdir /mnt/public-vscode
 
-# 如果你不使用这些目录，那么请修改 install-open-hydra.yaml 中 config.yaml: | 下的内容，修改下方的键 datasetBasePath，jupyterLabHostBaseDir，vscodeBasePath 为你自己的目录 
+# 如果你不使用这些目录，那么请修改 install-open-hydra.yaml 中 config.yaml: | 下的内容，修改下方的键 datasetBasePath，jupyterLabHostBaseDir，vscodeBasePath, courseBasePath 为你自己的目录 
 ```
 
 #### 在已经部署好的 k8s 集群中安装 open-hydra
@@ -168,6 +173,19 @@ $ kubectl get openhydrausers user1
 # 输出
 NAME    AGE
 user1   <unknown>
+```
+
+#### 开启 nvidia-gpu 基于时间片的共享(可选)
+
+```bash
+# 创建时间切片的配置
+# 你可以修改 deploy/time-slicing-gpu.yaml 中的 replicas 字段来调整显卡副本数
+$ kubectl apply -f deploy/time-slicing-gpu.yaml
+# patch gpu-operator
+$ kubectl patch clusterpolicy/cluster-policy     -n gpu-operator --type merge     -p '{"spec": {"devicePlugin": {"config": {"name": "time-slicing-config-all", "default": "any"}}}}'
+# 等待片刻后，检查 gpu-operator 已经运行了
+$ kubectl get pod -n gpu-operator -w
+
 ```
 
 #### 为 user1 创建一个 jupyter lab 环境

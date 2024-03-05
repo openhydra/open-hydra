@@ -18,6 +18,7 @@ spec:
       containers:
       - name: my-container
         image: docker.io/library/nginx:1.24.0-alpine
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
         volumeMounts:
