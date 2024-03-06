@@ -2,6 +2,7 @@
 # open-hydra
 
 [![codecov](https://codecov.io/github/openhydra/open-hydra/graph/badge.svg?token=YIC9CCFA3D)](https://codecov.io/github/openhydra/open-hydra)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/695338f25de94dc69d5b222c49770f2a)](https://app.codacy.com/gh/openhydra/open-hydra/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 open-hydra 是一个专注于 `机器学习|深度学习` 教育培训一体机的管理平台， 他可以用来快速创建在线的开发环境。 For English version please see [README-EN.md](docs/README-EN.md),他有以下特性
 
