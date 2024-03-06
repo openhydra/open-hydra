@@ -130,7 +130,7 @@ func DefaultConfig() *OpenHydraServerConfig {
 		MySqlConfig:                   DefaultMySqlConfig(),
 		EtcdConfig:                    DefaultEtcdConfig(),
 		OpenHydraNamespace:            defaultNamespace,
-		ImageRepo:                     "docker.io/99cloud/jupyter:Python-3.8.18",
+		ImageRepo:                     "docker.io/99cloud/jupyter:Python-3.8.18-dual-lan",
 		VSCodeImageRepo:               "docker.io/99cloud/vscode:1.85.1",
 		LeaderElection:                DefaultLeaderElection(),
 		DefaultGpuDriver:              "nvidia.com/gpu",
