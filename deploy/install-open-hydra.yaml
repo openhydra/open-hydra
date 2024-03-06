@@ -47,7 +47,7 @@ data:
     datasetBasePath: /mnt/public-dataset
     datasetVolumeType: hostpath
     jupyterLabHostBaseDir: /mnt/jupyter-lab
-    imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18"
+    imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18-dual-lan"
     vscodeImageRepo: "docker.io/99cloud/vscode:1.85.1"
     defaultGpuDriver: nvidia.com/gpu
     serverIP: "localhost"
