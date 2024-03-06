@@ -75,7 +75,7 @@ gen-all-deepcopy-set: gen-device-deepcopy-set gen-dataset-deepcopy-set gen-user-
 
 .PHONY: test-all
 test-all:
-	ginkgo -r -v
+	ginkgo -r -v --cover --coverprofile=coverage.out
 
 .PHONY: fmt
 fmt:
