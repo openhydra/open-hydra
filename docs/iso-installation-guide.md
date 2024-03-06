@@ -192,3 +192,7 @@ open-hydra           open-hydra-server-5c659bf678-n5ldl                         
 open-hydra           open-hydra-ui-79c444fc4c-w59ws                                1/1     Running            0              3d1h
 open-hydra           reverse-proxy-6b4d55d79-77s65                                 1/1     Running            0              3d1h
 ```
+
+## 屏幕唤醒黑屏的问题
+
+* 当你让服务器自动安装时，如果屏幕进入待机状态后唤醒后会出现花瓶现象，这是由于安装过程中同时安装了 gpu 驱动可能会导致显示有问题，不用担心可以重启一次即可，或者你可以直接 ssh 进行管理那么就不需要重启了
