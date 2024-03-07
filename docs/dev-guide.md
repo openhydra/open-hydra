@@ -67,7 +67,7 @@ mysqlConfig:
   address: mycluster-instances.mysql-operator.svc
   port: 3306
   username: root
-  password: 99cloud
+  password: openhydra
   databaseName: openhydra
   protocol: tcp
 leaderElection:
