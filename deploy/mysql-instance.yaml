@@ -1,7 +1,7 @@
 apiVersion: v1
 data:
   rootHost: JQ==
-  rootPassword: OTljbG91ZA==
+  rootPassword: b3Blbmh5ZHJh
   rootUser: cm9vdA==
 kind: Secret
 metadata:
