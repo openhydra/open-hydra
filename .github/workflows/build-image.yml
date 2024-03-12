@@ -22,13 +22,13 @@ jobs:
           go-version: 1.21.4
         id: go
 
-      - name: Build
-        run: make go-build
-
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Build
+        run: make go-build
 
       - name: Extract Tag
         id: extract_tag
