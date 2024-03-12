@@ -141,7 +141,7 @@ func checkConfig(config *config.OpenHydraServerConfig) []string {
 }
 
 func checkDBConfig(config *config.OpenHydraServerConfig) error {
-	// add a comment for testing
+
 	if config.MySqlConfig == nil || config.EtcdConfig == nil {
 		return fmt.Errorf("both mysql and etcd config are nil, at least one of them should be set")
 	}
