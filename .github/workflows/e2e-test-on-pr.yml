@@ -1,0 +1,83 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: E2e-test
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**.go"
+
+jobs:
+  create-cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1
+
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Deploy mysql
+        run: |
+          kubectl create -f deploy/mysql-operator-crds.yaml
+          kubectl create -f deploy/mysql-operator.yaml
+          kubectl wait --for=condition=available --timeout=120s deployment/mysql-operator -n mysql-operator
+          kubectl create -f deploy/mysql-instance.yaml
+          kubectl wait pods mycluster-0 -n mysql-operator --for condition=Ready --timeout=120s
+
+      - name: Deploy openhydra
+        run: |
+          mkdir /mnt/public-dataset
+          mkdir /mnt/public-course
+          mkdir /mnt/jupyter-lab
+          mkdir /mnt/public-vscode
+          sed -i 's/defaultCpuPerDevice: 2000/defaultCpuPerDevice: 1000/g' deploy/install-open-hydra.yaml
+          sed -i 's/defaultRamPerDevice: 8192/defaultRamPerDevice: 2048/g' deploy/install-open-hydra.yaml
+          kubectl create -f deploy/install-open-hydra.yaml
+          kubectl wait --for=condition=available --timeout=180s deployment/open-hydra-server -n open-hydra
+
+      - name: Test openhydra
+        run: |
+          echo "Attempting to test openhydra..."
+          echo "Creating user-admin..."
+          kubectl create -f deploy/user-admin.yaml
+          result=$(kubectl get openhydrausers admin | wc -l)
+          if [ "$result" != 2 ]; then
+            echo "Failed to create user-admin..."
+            exit -1
+          fi
+          echo "Creating device for admin..."
+          kubectl create -f deploy/device-jupyter-admin.yaml
+          kubectl wait --for=condition=available --timeout=600s deployment/openhydra-deploy-admin -n open-hydra
+          echo "Waiting 10 seconds for the device to be ready..."
+          sleep 10
+          address=$(kubectl get devices admin -o jsonpath="{@.spec.jupyterLabUrl}")
+          result=$(curl -s -o /dev/null -w "%{http_code}" $address)
+          if [ "$result" != 302 ]; then
+            echo "Failed to create device for admin..."
+            exit -1
+          fi
+          echo "Deleting device for admin..."
+          kubectl delete -f deploy/device-jupyter-admin.yaml
+          kubectl wait --for=delete --timeout=600s deployment/openhydra-deploy-admin -n open-hydra
+          # wait 90s for the pod to release the resources
+          echo "Waiting 90 seconds for the device to be deleted..."
+          sleep 90
+          echo "Creating vscode device for admin..."
+          kubectl create -f deploy/device-vscode-admin.yaml
+          kubectl wait --for=condition=available --timeout=600s deployment/openhydra-deploy-admin -n open-hydra
+          echo "Waiting 10 seconds for the device to be ready..."
+          sleep 10
+          address=$(kubectl get devices admin -o jsonpath="{@.spec.vsCodeUrl}")
+          result=$(curl -s -o /dev/null -w "%{http_code}" $address)
+          if [ "$result" != 200 ]; then
+            exit -1
+          fi
+          echo "Deleting vscode device for admin..."
+          kubectl delete -f deploy/device-vscode-admin.yaml
+          kubectl wait --for=delete --timeout=600s deployment/openhydra-deploy-admin -n open-hydra
+          echo "Test passed..."
