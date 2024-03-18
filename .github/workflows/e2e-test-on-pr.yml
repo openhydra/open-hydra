@@ -28,6 +28,8 @@ jobs:
           kubectl wait --for=condition=available --timeout=120s deployment/mysql-operator -n mysql-operator
           kubectl create -f deploy/mysql-instance.yaml
           echo "wait 60 sec for pod of mysql instance to show up"
+          sleep 60
+          kubectl get pods -n mysql-operator
           kubectl wait pods mycluster-0 -n mysql-operator --for condition=Ready --timeout=120s
 
       - name: Deploy openhydra
