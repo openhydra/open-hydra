@@ -11,6 +11,7 @@ import (
 )
 
 func (builder *OpenHydraRouteBuilder) AddGetSettingRoute() {
+	// add a comment for pr e2e test
 	path := "/" + SettingPath + "/{name}"
 	builder.addPathAuthorization(path, http.MethodGet, 1)
 	builder.RootWS.Route(builder.RootWS.GET(path).Operation("getSetting").To(builder.GetSettingRouteHandler).
