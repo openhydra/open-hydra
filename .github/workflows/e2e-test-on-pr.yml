@@ -21,6 +21,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Deploy local path sc
+        run: |
+          mkdir -p /opt/local-path-provisioner
+          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+          sleep 5
+          kubectl get sc
+          kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
       - name: Deploy mysql
         run: |
           kubectl create -f deploy/mysql-operator-crds.yaml
