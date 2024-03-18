@@ -38,8 +38,11 @@ jobs:
           echo "wait 60 sec for pod of mysql instance to show up"
           sleep 60
           kubectl get pods -n mysql-operator
+          echo "Print log of container fixdatadir"
           kubectl logs mycluster-0 -n mysql-operator -c fixdatadir
+          echo "Print log of container initconf"
           kubectl logs mycluster-0 -n mysql-operator -c initconf
+          echo "Print log of container initmysql"
           kubectl logs mycluster-0 -n mysql-operator -c initmysql
           kubectl wait pods mycluster-0 -n mysql-operator --for condition=Ready --timeout=120s
 
