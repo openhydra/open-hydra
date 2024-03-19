@@ -120,20 +120,64 @@ var _ = Describe("open-hydra-server handler test", func() {
 	})
 
 	Describe("device handler test", func() {
-		It("get cpu should be expected", func() {
-			cpu := builder.GetCpu(*device)
-			Expect(cpu).To(Equal("4000m"))
+		It("get cpu without over committing should be expected", func() {
+			cpuReq, cpuLimit := builder.GetCpu(*device)
+			Expect(cpuReq).To(Equal("4000m"))
+			Expect(cpuLimit).To(Equal("4000m"))
 			device.Spec.DeviceCpu = ""
-			cpu = builder.GetCpu(*device)
-			Expect(cpu).To(Equal("2000m"))
+			cpuReq, cpuLimit = builder.GetCpu(*device)
+			Expect(cpuReq).To(Equal("2000m"))
+			Expect(cpuLimit).To(Equal("2000m"))
 		})
 
-		It("get ram should be expected", func() {
-			ram := builder.GetRam(*device)
-			Expect(ram).To(Equal("10240Mi"))
+		It("get ram without over committing should be expected", func() {
+			ramReq, ramLimit := builder.GetRam(*device)
+			Expect(ramReq).To(Equal("10240Mi"))
+			Expect(ramLimit).To(Equal("10240Mi"))
 			device.Spec.DeviceRam = ""
-			ram = builder.GetRam(*device)
-			Expect(ram).To(Equal("8192Mi"))
+			ramReq, ramLimit = builder.GetRam(*device)
+			Expect(ramReq).To(Equal("8192Mi"))
+			Expect(ramLimit).To(Equal("8192Mi"))
+		})
+
+		It("get cpu with over committing should be expected", func() {
+			openHydraConfig.CpuOverCommitRate = 2
+			cpuReq, cpuLimit := builder.GetCpu(*device)
+			Expect(cpuReq).To(Equal("2000m"))
+			Expect(cpuLimit).To(Equal("4000m"))
+			device.Spec.DeviceCpu = ""
+			cpuReq, cpuLimit = builder.GetCpu(*device)
+			Expect(cpuReq).To(Equal("1000m"))
+			Expect(cpuLimit).To(Equal("2000m"))
+		})
+
+		It("get ram with over committing should be expected", func() {
+			openHydraConfig.MemoryOverCommitRate = 2
+			ramReq, ramLimit := builder.GetRam(*device)
+			Expect(ramReq).To(Equal("5120Mi"))
+			Expect(ramLimit).To(Equal("10240Mi"))
+			device.Spec.DeviceRam = ""
+			ramReq, ramLimit = builder.GetRam(*device)
+			Expect(ramReq).To(Equal("4096Mi"))
+			Expect(ramLimit).To(Equal("8192Mi"))
+		})
+
+		It("combine cpu memory set with over commit should be expected", func() {
+			openHydraConfig.CpuOverCommitRate = 2
+			openHydraConfig.MemoryOverCommitRate = 2
+			result := builder.CombineReqLimit(*device)
+			Expect(result.CpuRequest).To(Equal("2000m"))
+			Expect(result.CpuLimit).To(Equal("4000m"))
+			Expect(result.MemoryRequest).To(Equal("5120Mi"))
+			Expect(result.MemoryLimit).To(Equal("10240Mi"))
+		})
+
+		It("combine cpu memory set without over commit should be expected", func() {
+			result := builder.CombineReqLimit(*device)
+			Expect(result.CpuRequest).To(Equal("4000m"))
+			Expect(result.CpuLimit).To(Equal("4000m"))
+			Expect(result.MemoryRequest).To(Equal("10240Mi"))
+			Expect(result.MemoryLimit).To(Equal("10240Mi"))
 		})
 
 		It("get volume should be expected", func() {

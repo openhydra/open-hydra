@@ -10,6 +10,7 @@ import (
 	"open-hydra/pkg/open-hydra/k8s"
 	"open-hydra/pkg/util"
 	"path"
+	"strconv"
 
 	"github.com/emicklei/go-restful/v3"
 	coreV1 "k8s.io/api/core/v1"
@@ -208,7 +209,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		image = builder.Config.VSCodeImageRepo
 	}
 
-	err = builder.k8sHelper.CreateDeployment(builder.GetCpu(reqDevice), builder.GetRam(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.IDEType, builder.BuildVolumes(reqDevice), gpuSet, builder.kubeClient)
+	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.IDEType, builder.BuildVolumes(reqDevice), gpuSet, builder.kubeClient)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
@@ -327,18 +328,57 @@ func (builder *OpenHydraRouteBuilder) DeviceDeleteRouteHandler(request *restful.
 	response.WriteEntity(&result)
 }
 
-func (builder *OpenHydraRouteBuilder) GetCpu(postDevice xDeviceV1.Device) string {
+func (builder *OpenHydraRouteBuilder) GetCpu(postDevice xDeviceV1.Device) (string, string) {
+	cpuReq := builder.Config.DefaultCpuPerDevice
+	cpuLimit := builder.Config.DefaultCpuPerDevice
 	if postDevice.Spec.DeviceCpu != "" {
-		return fmt.Sprintf("%sm", postDevice.Spec.DeviceCpu)
+		i, err := strconv.ParseUint(postDevice.Spec.DeviceCpu, 10, 64)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed convert %s to uint64 fall back to default cpu setting", postDevice.Spec.DeviceCpu))
+		} else {
+			cpuReq = i
+			cpuLimit = i
+		}
 	}
-	return fmt.Sprintf("%dm", builder.Config.DefaultCpuPerDevice)
+
+	if builder.Config.CpuOverCommitRate > 1 {
+		// apply cpu over commit rate
+		cpuReq = cpuReq / uint64(builder.Config.CpuOverCommitRate)
+	}
+
+	return fmt.Sprintf("%dm", cpuReq), fmt.Sprintf("%dm", cpuLimit)
 }
 
-func (builder *OpenHydraRouteBuilder) GetRam(postDevice xDeviceV1.Device) string {
+func (builder *OpenHydraRouteBuilder) GetRam(postDevice xDeviceV1.Device) (string, string) {
+	memoryReq := builder.Config.DefaultRamPerDevice
+	memoryLimit := builder.Config.DefaultRamPerDevice
 	if postDevice.Spec.DeviceRam != "" {
-		return fmt.Sprintf("%sMi", postDevice.Spec.DeviceRam)
+		i, err := strconv.ParseUint(postDevice.Spec.DeviceRam, 10, 64)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed convert %s to uint64 fall back to default memory setting", postDevice.Spec.DeviceRam))
+		} else {
+			memoryReq = i
+			memoryLimit = i
+		}
 	}
-	return fmt.Sprintf("%dMi", builder.Config.DefaultRamPerDevice)
+
+	if builder.Config.MemoryOverCommitRate > 1 {
+		// apply memory over commit rate
+		memoryReq = memoryReq / uint64(builder.Config.MemoryOverCommitRate)
+	}
+
+	return fmt.Sprintf("%dMi", memoryReq), fmt.Sprintf("%dMi", memoryLimit)
+}
+
+func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Device) k8s.CpuMemorySet {
+	cpuReq, cpuLimit := builder.GetCpu(postDevice)
+	memoryReq, memoryLimit := builder.GetRam(postDevice)
+	return k8s.CpuMemorySet{
+		CpuRequest:    cpuReq,
+		CpuLimit:      cpuLimit,
+		MemoryRequest: memoryReq,
+		MemoryLimit:   memoryLimit,
+	}
 }
 
 func (builder *OpenHydraRouteBuilder) BuildVolumes(postDevice xDeviceV1.Device) []envApi.VolumeMount {

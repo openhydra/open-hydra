@@ -129,13 +129,13 @@ func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client 
 	return nil
 }
 
-func (help *DefaultHelper) CreateDeployment(cpu, memory, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
+func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
 	baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, studentID)
 	replicas := int32(1)
-	resourceReqLim := createResource(cpu, memory, gpuSet)
+	resourceReq, resourceLim := createResource(cpuMemorySet, gpuSet)
 	ideTypeLabelValue := OpenHydraIDELabelUnset
 	if ideType != "" {
 		ideTypeLabelValue = ideType
@@ -167,7 +167,7 @@ func (help *DefaultHelper) CreateDeployment(cpu, memory, image, namespace, stude
 				},
 				Spec: coreV1.PodSpec{
 					Volumes:    createVolume(volumes),
-					Containers: createContainers(baseName, image, volumes, resourceReqLim),
+					Containers: createContainers(baseName, image, volumes, resourceReq, resourceLim),
 				},
 			},
 		},
@@ -181,18 +181,23 @@ func (help *DefaultHelper) CreateDeployment(cpu, memory, image, namespace, stude
 	return nil
 }
 
-func createResource(cpu, memory string, gpuSet apis.GpuSet) coreV1.ResourceList {
-	resourceReqLim := coreV1.ResourceList{
-		coreV1.ResourceCPU:    resource.MustParse(cpu),
-		coreV1.ResourceMemory: resource.MustParse(memory),
+func createResource(cpuMemorySet CpuMemorySet, gpuSet apis.GpuSet) (coreV1.ResourceList, coreV1.ResourceList) {
+	resourceReq := coreV1.ResourceList{
+		coreV1.ResourceCPU:    resource.MustParse(cpuMemorySet.CpuRequest),
+		coreV1.ResourceMemory: resource.MustParse(cpuMemorySet.MemoryRequest),
+	}
+	resourceLim := coreV1.ResourceList{
+		coreV1.ResourceCPU:    resource.MustParse(cpuMemorySet.CpuLimit),
+		coreV1.ResourceMemory: resource.MustParse(cpuMemorySet.MemoryLimit),
 	}
 	if gpuSet.Gpu > 0 {
-		resourceReqLim[coreV1.ResourceName(gpuSet.GpuDriverName)] = resource.MustParse(strconv.Itoa(int(gpuSet.Gpu)))
+		resourceReq[coreV1.ResourceName(gpuSet.GpuDriverName)] = resource.MustParse(strconv.Itoa(int(gpuSet.Gpu)))
+		resourceLim[coreV1.ResourceName(gpuSet.GpuDriverName)] = resource.MustParse(strconv.Itoa(int(gpuSet.Gpu)))
 	}
-	return resourceReqLim
+	return resourceReq, resourceLim
 }
 
-func createContainers(baseName, image string, volumes []apis.VolumeMount, resourceReqLim coreV1.ResourceList) []coreV1.Container {
+func createContainers(baseName, image string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList) []coreV1.Container {
 	container := coreV1.Container{
 		Name:            baseName + "-container",
 		Image:           image,
@@ -207,11 +212,10 @@ func createContainers(baseName, image string, volumes []apis.VolumeMount, resour
 				Protocol:      coreV1.ProtocolTCP,
 			},
 		},
-		// now we keep all pod in qos group guaranteed
-		// do not break it for the god sake
+
 		Resources: coreV1.ResourceRequirements{
-			Limits:   resourceReqLim,
-			Requests: resourceReqLim,
+			Limits:   resourceLimit,
+			Requests: resourceReq,
 		},
 	}
 

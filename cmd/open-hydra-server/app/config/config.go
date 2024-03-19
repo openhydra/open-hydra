@@ -98,6 +98,8 @@ type (
 		DBType                  string          `json:"db_type" yaml:"dbType"`
 		DisableAuth             bool            `json:"disable_auth" yaml:"disableAuth"`
 		PatchResourceNotRelease bool            `json:"patch_resource_not_release" yaml:"patchResourceNotRelease"`
+		CpuOverCommitRate       uint8           `json:"cpu_over_commit_rate" yaml:"cpuOverCommitRate"`
+		MemoryOverCommitRate    uint8           `json:"memory_over_commit_rate" yaml:"memoryOverCommitRate"`
 	}
 )
 
@@ -136,6 +138,8 @@ func DefaultConfig() *OpenHydraServerConfig {
 		DefaultGpuDriver:              "nvidia.com/gpu",
 		JupyterLabHostBaseDir:         "/mnt/jupyter-lab",
 		ServerIP:                      "localhost",
+		CpuOverCommitRate:             1, // no over commit for cpu by default,set to 2 cpu request will be divide by 2
+		MemoryOverCommitRate:          1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2
 	}
 }
 

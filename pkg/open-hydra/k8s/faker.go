@@ -73,7 +73,7 @@ func (f *Fake) DeleteUserDeployment(label, namespace string, client *kubernetes.
 	delete(f.labelDeploy, label)
 	return nil
 }
-func (f *Fake) CreateDeployment(cpu, memory, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
+func (f *Fake) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
 	label := fmt.Sprintf("%s=%s", OpenHydraUserLabelKey, studentID)
 	f.labelDeploy[label] = append(f.labelDeploy[label], appsV1.Deployment{})
 	f.namespacedDeploy[namespace] = append(f.namespacedDeploy[namespace], appsV1.Deployment{})
