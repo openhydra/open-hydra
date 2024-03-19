@@ -34,6 +34,7 @@ jobs:
           kubectl create -f deploy/mysql-operator.yaml
           kubectl wait --for=condition=available --timeout=120s deployment/mysql-operator -n mysql-operator
           echo "wait 30 sec for mysql operator"
+          sleep 30
           kubectl create -f deploy/mysql-instance.yaml
           echo "wait 60 sec for pod of mysql instance to show up"
           sleep 60
