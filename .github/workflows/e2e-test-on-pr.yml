@@ -27,13 +27,13 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
           sleep 5
           kubectl get sc
-          kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
       - name: Deploy mysql
         run: |
           kubectl create -f deploy/mysql-operator-crds.yaml
           kubectl create -f deploy/mysql-operator.yaml
           kubectl wait --for=condition=available --timeout=120s deployment/mysql-operator -n mysql-operator
+          echo "wait 30 sec for mysql operator"
           kubectl create -f deploy/mysql-instance.yaml
           echo "wait 60 sec for pod of mysql instance to show up"
           sleep 60
