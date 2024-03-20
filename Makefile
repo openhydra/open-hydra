@@ -87,8 +87,8 @@ vet:
 
 .PHONY: go-build
 go-build:
-	CGO_ENABLED=0 go build -o cmd/open-hydra-server/open-hydra-server -ldflags "-X 'main.version=${TAG}'" cmd/open-hydra-server/main.go
+	CGO_ENABLED=0 GOARCH=$(GOARCH) go build -o cmd/open-hydra-server/open-hydra-server -ldflags "-X 'main.version=${TAG}'" cmd/open-hydra-server/main.go
 
 .PHONY: image
 image: go-build
-	docker build -f hack/builder/Dockerfile -t $(REGISTRY)/open-hydra-server:$(IMAGETAG) .
+	docker build -t $(REGISTRY)/open-hydra-server:$(IMAGETAG) .
