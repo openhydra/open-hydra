@@ -26,7 +26,7 @@ func NewCommand(version string) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:     "open-hydra-server",
-		Example: figure.NewColorFigure("OpenHydra machine learn for everyone", "", "green", true).String(),
+		Example: figure.NewColorFigure("OpenHydra", "", "green", true).String(),
 	}
 
 	runCmd := &cobra.Command{
