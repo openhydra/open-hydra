@@ -79,7 +79,7 @@ $ mkdir /mnt/public-vscode
 
 ```bash
 # create a mysql database
-$ kubectl apply -f deploy/mysql-deploy-crds.yaml
+$ kubectl apply -f deploy/mysql-operator-crds.yaml
 $ kubectl apply -f deploy/mysql-operator.yaml
 $ kubectl apply -f deploy/mysql-instance.yaml
 

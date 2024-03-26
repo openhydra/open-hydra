@@ -75,7 +75,7 @@ $ mkdir /mnt/public-vscode
 
 ```bash
 # 创建 mysql 实例
-$ kubectl apply -f deploy/mysql-deploy-crds.yaml
+$ kubectl apply -f deploy/mysql-operator-crds.yaml
 $ kubectl apply -f deploy/mysql-operator.yaml
 $ kubectl apply -f deploy/mysql-instance.yaml
 
