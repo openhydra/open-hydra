@@ -4,6 +4,7 @@ import (
 	stdErr "errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 	coreV1 "k8s.io/api/core/v1"
@@ -100,14 +101,26 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 
 		if _, found := serviceFlat[user.Name]; found {
 			if podFlat[user.Name].Labels[k8s.OpenHydraIDELabelKey] == k8s.OpenHydraIDELabelVSCode {
-				device.Spec.VSCodeURL = fmt.Sprintf("http://%s:%d", config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
+				device.Spec.VSCodeURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
 			} else {
-				device.Spec.EasyTrainURL = fmt.Sprintf("http://%s:%d", config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
-				device.Spec.JupyterLabURL = fmt.Sprintf("http://%s:%d", config.ServerIP, serviceFlat[user.Name].Spec.Ports[1].NodePort)
+				device.Spec.EasyTrainURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
+				device.Spec.JupyterLabURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[1].NodePort)
 			}
 
 		}
 		result = append(result, device)
 	}
 	return result
+}
+
+func combineUrl(serverAddress string, port int32) string {
+	addressSet := strings.Split(serverAddress, ",")
+	if len(addressSet) <= 1 {
+		return fmt.Sprintf("http://%s:%d", serverAddress, port)
+	}
+	var result []string
+	for _, address := range addressSet {
+		result = append(result, fmt.Sprintf("http://%s:%d", address, port))
+	}
+	return strings.Join(result, ",")
 }

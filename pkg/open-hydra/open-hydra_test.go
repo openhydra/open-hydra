@@ -335,6 +335,14 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 			Expect(devices[1].Spec.JupyterLabURL).To(Equal("http://localhost:8888"))
 		})
 
+		It("should be container two address", func() {
+			result := combineUrl(openHydraConfig.ServerIP, 5000)
+			Expect(result).To(Equal("http://localhost:5000"))
+			openHydraConfig.ServerIP = "localhost,10.0.0.10"
+			result = combineUrl(openHydraConfig.ServerIP, 5000)
+			Expect(result).To(Equal("http://localhost:5000,http://10.0.0.10:5000"))
+		})
+
 		AfterEach(func() {
 		})
 	})
