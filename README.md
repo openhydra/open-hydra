@@ -285,3 +285,7 @@ user1   http://172.16.151.70:37811   Running   1
 ```
 
 ![open-hydra](images/lab-02.png)
+
+## 解决问题
+
+常见问题的解决的方法见文档 [错误解决](docs/trouble-shooting.md)
