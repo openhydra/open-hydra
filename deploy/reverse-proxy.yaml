@@ -77,7 +77,7 @@ data:
 
     http {
         upstream api {
-          server kubernetes.default.svc.cluster.local:6443;
+          server kubernetes.default.svc.cluster.local:443;
         }
         server {
           listen              80;
