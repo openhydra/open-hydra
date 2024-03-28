@@ -217,7 +217,7 @@ user1   http://172.16.151.70:31001   Running
 # 用浏览器打开页面 http://172.16.151.70:31001
 ```
 
-![open-hydra](images/lab-01.png)
+![open-hydra](../images/lab-01.png)
 
 #### Shutdown the jupyter lab for user1
 
@@ -257,7 +257,7 @@ User    LabUrl                       Status
 user1   http://172.16.151.70:30013   Running
 ```
 
-![open-hydra](images/vscode-01.png)
+![open-hydra](../images/vscode-01.png)
 
 ### Create a gpu device for user1 with jupyter lab
 
@@ -288,7 +288,7 @@ user1   http://172.16.151.70:37811   Running   1
 # open browser and enter http://172.16.151.70:37811
 ```
 
-![open-hydra](images/lab-02.png)
+![open-hydra](../images/lab-02.png)
 
 ## trouble shooting
 
