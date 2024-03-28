@@ -26,6 +26,7 @@ func init() {
 	utilRuntime.Must(option.Scheme.SetVersionPriority(option.GroupVersion))
 	metaV1.AddToGroupVersion(option.Scheme, option.GroupVersion)
 
+	// add a comment for ci test
 	// TODO(devdattakulkarni) -- Following comments coming from sample-apiserver.
 	// Leaving them for now.
 	// TODO: keep the generic API server from wanting this
