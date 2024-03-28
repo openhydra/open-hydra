@@ -292,4 +292,4 @@ user1   http://172.16.151.70:37811   Running   1
 
 ## trouble shooting
 
-Please see [trouble shooting](docs/trouble-shooting-en.md) for detail
+Please see [trouble shooting](trouble-shooting-en.md) for detail
