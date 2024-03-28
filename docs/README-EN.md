@@ -289,3 +289,7 @@ user1   http://172.16.151.70:37811   Running   1
 ```
 
 ![open-hydra](images/lab-02.png)
+
+## trouble shooting
+
+Please see [trouble shooting](docs/trouble-shooting-en.md) for detail

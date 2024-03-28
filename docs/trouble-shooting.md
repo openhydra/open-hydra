@@ -12,9 +12,15 @@
 # 开始重置
 $ systemctl stop kubelet
 $ systemctl disable kubelet
+# 停止并禁用 openhydra 安装服务,因为如果 /etc/kubernetes 不存在的话 systemd 服务会在服务器重启后自动运行
+# 会将事情复杂化，所以我们需要停止和禁用服务以简化事情
+$ systemctl stop maas
+$ systemctl disable maas
 # 如果 kubeadm reset -f 这个命令各卡住超过 2 分钟， 则直接重启服务器即可
 $ kubeadm reset -f
-# 检查是否有僵尸容器
+# 清理 kubeclipper 数据库 
+$ kcctl clean -Af
+# 检查是否有僵尸容器，如果之前重启过服务器那么大概率不会有僵尸容器，直接跳过这一步
 $ ctr -n k8s.io container list
 # 注意 如果上面的命令返回有容器则需要重启服务器
 $ reboot
