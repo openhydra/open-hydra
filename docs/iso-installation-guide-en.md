@@ -1,26 +1,26 @@
-# 使用预先打包的 iso 一体机快速安装指南
+# Installation Guide with Pre-packaged ISO
 
-本文档描述了如何使用预先打包好的镜像来安装操作已经 open-hydra 相关的组件
+This document describes how to use a pre-packaged image to install the operating system and related components of open-hydra.
 
-## 下载镜像
+## Download Image
 
-* 链接: https://pan.baidu.com/s/1GsHhDEnRMBBUrQXpusmtSA?pwd=uc2e 提取码: uc2e
+* [baidu disk](https://pan.baidu.com/s/1GsHhDEnRMBBUrQXpusmtSA?pwd=uc2e) code: uc2e
 
-## 最小硬件要求
+## Minimum Hardware Requirements
 
-* (optional)nvidia cuda gpu >= 1
+* (optional)nvidia gpu >= 1 (driver: 525.125.06)
 * 250 GB 硬盘 >= 1
 * core >= 8
 * memory >= 32 GB
 
-## usb 包含的组件介绍
+## Components included in the USB
 
 * ubuntu-server-20.04.6-live-server-amd64.iso
   * k8s aio cluster deploy with [kubeclipper](https://github.com/kubeclipper/kubeclipper)
   * open-hydra
     * server
-    * 反向代理 api-server(建议在安全要求搞的情况下删除)
-    * dashboard(不建议在安全要求搞的情况下使用)
+    * reverse proxy for api-server(Not recommended in a secure environment)
+    * dashboard(not recommended in a secure environment)
   * gpu-operator
     * nvidia-driver
     * nvidia-container-toolkit
@@ -28,122 +28,122 @@
     * nvidia-device-plugin
     * nvidia-cuda-validator
 
-## 安装流程介绍
+## Installation Process Introduction
 
-1. 插入 usb 到主机
-2. 重启主机
-3. 进入 boot 菜单(根据主板不同，进入方式不同，比如有些主板是按 F12，有些主板是按 F8 或者 F11)
-4. 选择 usb 启动（这里可能会看到 usb 和 usb-partition 1 这是我们用 usb-partition 1）
-5. 开始安装流程
-6. 安装完成后，重启主机
-7. 移除 usb
-8. 进入系统
-9. 等待完成
+1. Insert the USB into the host
+2. Restart the host
+3. Enter the boot menu (the method varies depending on the motherboard, such as F12, F8, or F11)
+4. Select USB boot
+5. Start the installation process
+6. After the installation is complete, restart the host
+7. Remove the USB from server
+8. Enter the system
+9. Wait for completion of openhydra installation
 
-## 安装过程详细说明
+## Installation Process Detailed Description
 
-### 步骤5--开始安装流程
+### Step 1--Start the installation process
 
-* 进入 usb boot 界面后会有一端时间进行 iso 数据验证的过程大概需要持续3-5分钟不等，如下图
+* After entering the USB boot interface, there will be a period of time for the ISO data verification process, which will last for about 3-5 minutes, as shown below
 
 ![installation](../images/installation-1.png)
 
-* 语言选择--在弹出的语言学则界面我们这里选择 "English" 并按下回车键，如下图
+* Language selection--In the pop-up language learning interface, we choose "English" and press the Enter key, as shown below
 
 ![installation](../images/installation-2.png)
 
-* 语言选择--在接下去弹出的对话框中直接按回车确认，如下图
+* Language selection--In the next pop-up dialog box, press Enter to confirm, as shown below
 
 ![installation](../images/installation-3.png)
 
-* 网络配置--在弹出的网络配置界，我们按 "键盘上" 键选择默认选中的第一张网卡，如果下图
+* network configuration--In the pop-up network configuration interface, we press the "up arrow" key to select the first network card that is selected by default, as shown below
 
 ![installation](../images/installation-4.png)
 
-* 网络配置--按下回车键后，在弹出的网络配置界面，然后选择 "Edit IPv4" 后按下回车，如下图
+* network configuration--After pressing the Enter key, in the pop-up network configuration interface, select "Edit IPv4" and press Enter, as shown below
 
 ![installation](../images/installation-6.png)
 
-* 网络配置--在弹出的网络配置界面，我们选择 "Manual" 后按下回车，如下图
-
+* network configuration--In the pop-up network configuration interface, we select "Manual" and press Enter, as shown below
+* modify the address that suits your network environment, here we set it to
+* ensure this network adapter is connected to the network or k8s will fail to install
 ![installation](../images/installation-7.png)
 ![installation](../images/installation-8.png)
 
-* 网络配置--在弹出的地址输入框中输入地址，我们这里为了后期网络配置方便我们设成 172.16.151.70，然后把光标指向 "Save" 按下回车，如下图
+* network configuration--In the pop-up address input box, enter the address. Here, for the convenience of later network configuration, we set it to
 
 ![installation](../images/installation-9.png)
 
-* 网络配置--等待 10 秒后会出现 "Done" 选项在下方，我们按 "方向键下" 选中 "Done" 然后按回车，如下图
+* network configuration--After waiting for 10 seconds, the "Done" option will appear at the bottom. We press the "down arrow" key to select "Done" and press Enter, as shown below
 
 ![installation](../images/installation-10.png)
 
-* proxy 配置--跳过直接按回车，如下图
+* proxy configuration--skip directly press Enter, as shown below
 
 ![installation](../images/installation-11.png)
 
-* mirror 配置--跳过直接按回车，如下图
+* mirror configuration--skip directly press Enter, as shown below
 
 ![installation](../images/installation-12.png)
 
-* 升级页面--因为不通外部 intelnet 所有一段时间后会自动跳过
-* 磁盘配置--我们把光标往上操作对准 "Set up this disk as an LVM group" 然后按下 "空格" 键，如下图
+* upgrade page--because of no external internet, it will skip automatically after a period of time
+* storage configuration--We move the cursor up to "Set up this disk as an LVM group" and press the "space" key, as shown below
 
 ![installation](../images/installation-13.png)
 
-* 磁盘配置--取消选择 "Set up this disk as an LVM group"，如下图
+* storage configuration--Deselect "Set up this disk as an LVM group", as shown below
 
 ![installation](../images/installation-14.png)
 
-* 磁盘配置--把光标对准下方的 "Done" 按下回车，如下图
+* storage configuration--Move the cursor to "Done" at the bottom and press Enter, as shown below
 
 ![installation](../images/installation-15.png)
 
-* 磁盘配置--在弹出的界面再次点击 "Done"，大家不用纠结涂上的磁盘大小，因为截图的机器不一定和你最终的磁盘大小一致，如下图
+* storage configuration--Click "Done" again in the pop-up interface. Don't worry about the disk size, because the machine in the screenshot may not be the same as your final disk size, as shown below
 
 ![installation](../images/installation-16.png)
 
-* 磁盘配置--在弹出的界面，移动光标选择 "Continue" 然后按下回车确定，如下图
+* storage configuration--In the pop-up interface, move the cursor to "Continue" and press Enter to confirm, as shown below
 
 ![installation](../images/installation-17.png)
 
-* 用户配置--在弹出的界面，为了方便起见我们全部输入 "test" 然后操作光标对准 "Done" 然后按下回车，如下图
+* user configuration--In the pop-up interface, for the sake of convenience, we enter "test" for all, then move the cursor to "Done" and press Enter, as shown below
 
 ![installation](../images/installation-18.png)
 
-* ssh配置--在弹出的是否安装 ssh 光标默认会对准 "Install OpenSSH server"，如下图
+* ssh configuration--The cursor defaults to "Install OpenSSH server" in the pop-up whether to install ssh, as shown below
 
 ![installation](../images/installation-19.png)
 
-* ssh配置--我们直接 "空格" 键，移动光标选择下方的 "Done" 然后按下回车确定，如下图
+* ssh configuration--We directly press the "space" key, move the cursor to select "Done" below, and press Enter to confirm, as shown below
 
 ![installation](../images/installation-20.png)
 
-* 等待安装完成，如下图
+* Wait for installation to complete, as shown below
 
 ![installation](../images/installation-21.png)
 
-* 等待出现 "Reboot Now" 选项时，移动光标选中 "Reboot now"
-
-* 移除 usb 正常安装正常进入系统
+* Wait for the "Reboot Now" option to appear, move the cursor to "Reboot now"
+* Remove the USB and install it normally to enter the system
 
 ![installation](../images/installation-22.jpeg)
 
-## 查看安装输出日志
+## View installation output logs
 
 ```bash
 $ journalctl -u maas -f
 
-# 输出
-# 如果安装完成那么我们应该可以看到 maas.service: Succeeded 的输出
+# output
+# You should see maas.service: Succeeded if the installation is successful
 -- Logs begin at Sun 2023-12-10 10:58:29 UTC. --
 ...
 Dec 10 11:29:14 test systemd[1]: maas.service: Succeeded.
 Dec 10 11:29:14 test systemd[1]: Finished maas service.
 
-# 检验 pod 的状态
+# Check the status of the pod
 $ kubectl get pod -A
 
-# 输出，忽略 AGE 列，因为图是预先截取的
+# Output, ignore the AGE column, because the picture is pre-cut
 NAMESPACE            NAME                                                          READY   STATUS             RESTARTS       AGE
 default              gpu-pod                                                       0/1     Completed          0              5d4h
 gpu-operator         gpu-feature-discovery-w5nkp                                   1/1     Running            0              5d5h
@@ -193,21 +193,21 @@ open-hydra           open-hydra-ui-79c444fc4c-w59ws                             
 open-hydra           reverse-proxy-6b4d55d79-77s65                                 1/1     Running            0              3d1h
 ```
 
-## 访问 dashboard
+## Access the dashboard
 
-* 打开浏览器输入地址 `http://[ip]:30001`
+* Open browser and enter the address `http://[ip]:30001`
   * login with admin/openhydra
 
-## 屏幕唤醒黑屏的问题
+## Screen freezed issue
 
-* 测试有些带有 gpu 的服务器当你让服务器自动安装时，如果屏幕进入待机状态后唤醒后会出现花瓶现象，这是由于安装过程中同时安装了 gpu 驱动可能会导致显示有问题，不用担心可以重启一次即可，或者你可以直接 ssh 进行管理那么就不需要重启了
+* Some servers with gpu may have screen freezed issue during installation, this is due to the gpu driver installation during the installation process, you can restart the server to fix it or switch video output from gpu to other output device, or you can ssh into the server to manage it without restart
 
-## 禁用自动升级
+## diable auto upgrade
 
-由于 gpu operator 是基于 linux 内核构建的，我们使用离线驱动程序镜像 `-generic` 来离线安装 gpu 驱动程序，这就是为什么每次 linux 内核升级时 gpu operator 将无法工作，因此我们需要禁用自动升级，除非您打算升级。
+Due to gpu operator is build on linux kernel, we use offline driver image `-generic` to install gpu driver offline that's why gpu operator will failed to work every time linux kernel gets upgraded, so we need to disable auto upgrade unless you intend to upgrade.
 
 ```bash
-# 禁止自动升级
+# disable kernel upgrade
 $ apt-mark hold linux-headers-generic
 $ apt-mark hold linux-image-generic
 ```

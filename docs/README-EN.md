@@ -29,7 +29,7 @@ open-hydra is a management platform dedicated to `machine learning|deep learning
 
 ### Use pre-built aio iso image
 
-Please refer to [iso installation guide](../docs/iso-installation-guide-en.md)
+Please refer to [iso installation guide](iso-installation-guide-en.md)
 
 ### Deploy open-hydra on existing k8s environment
 
