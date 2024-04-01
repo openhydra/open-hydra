@@ -393,12 +393,14 @@ func (builder *OpenHydraRouteBuilder) BuildVolumes(postDevice xDeviceV1.Device) 
 			MountPath: builder.Config.PublicDatasetStudentMountPath,
 			// no bidirectional here so vfs will copy file from host to container, so no file concurrency issue here
 			SourcePath: builder.Config.PublicDatasetBasePath,
+			ReadOnly:   true,
 		},
 		{
 			Name:      "public-course",
 			MountPath: builder.Config.PublicCourseStudentMountPath,
 			// no bidirectional here so vfs will copy file from host to container, so no file concurrency issue here
 			SourcePath: builder.Config.PublicCourseBasePath,
+			ReadOnly:   true,
 		},
 	}
 
