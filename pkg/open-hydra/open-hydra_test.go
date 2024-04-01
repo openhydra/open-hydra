@@ -185,6 +185,7 @@ var _ = Describe("open-hydra-server handler test", func() {
 			Expect(volume[0].Name).To(Equal("jupyter-lab"))
 			Expect(volume[0].SourcePath).To(Equal(path.Join(openHydraConfig.JupyterLabHostBaseDir, device.Spec.OpenHydraUsername)))
 			Expect(volume[0].MountPath).To(Equal("/root/notebook"))
+			Expect(volume[1].ReadOnly).To(BeTrue())
 			Expect(volume[1].Name).To(Equal("public-dataset"))
 			Expect(volume[1].SourcePath).To(Equal(path.Join(openHydraConfig.PublicDatasetBasePath, device.Spec.OpenHydraUsername)))
 			Expect(volume[1].MountPath).To(Equal(openHydraConfig.PublicDatasetStudentMountPath))

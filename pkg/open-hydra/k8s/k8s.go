@@ -223,6 +223,7 @@ func createContainers(baseName, image string, volumes []apis.VolumeMount, resour
 		container.VolumeMounts = append(container.VolumeMounts, coreV1.VolumeMount{
 			Name:      volume.Name,
 			MountPath: volume.MountPath,
+			ReadOnly:  volume.ReadOnly,
 		})
 	}
 
