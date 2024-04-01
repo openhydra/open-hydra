@@ -37,3 +37,16 @@ $ systemctl start maas
 # check the log
 $ journalctl -u maas -f
 ```
+
+## How to update the image of open-hydra server
+
+* Login to the server running open-hydra server and run the following command
+
+```bash
+# Manually download the image
+$ ctr -n k8s.io i pull docker.io/99cloud/open-hydra-server:latest
+# Restart open-hydra server
+$ kubectl scale deployment open-hydra-server --replicas=0 -n open-hydra
+# Wait for 3 seconds
+$ kubectl scale deployment open-hydra-server --replicas=1 -n open-hydra
+```

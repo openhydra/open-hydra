@@ -34,3 +34,16 @@ $ systemctl start maas
 # 查看日志
 $ journalctl -u maas -f
 ```
+
+## 如何更新 open-hydra server 的镜像
+
+* 登陆 open-hydra server 的服务器运行以下命令
+
+```bash
+# 手动下载镜像
+$ ctr -n k8s.io i pull docker.io/99cloud/open-hydra-server:latest
+# 重启 open-hydra server
+$ kubectl scale deployment open-hydra-server --replicas=0 -n open-hydra
+# 等待 3 秒后
+$ kubectl scale deployment open-hydra-server --replicas=1 -n open-hydra
+```
