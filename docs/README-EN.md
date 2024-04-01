@@ -25,7 +25,153 @@ open-hydra is a management platform dedicated to `machine learning|deep learning
 
 ![open-hydra](../images/arch-02.png)
 
-## Quick start
+## Quick Start
+
+* We will run open-hydra in docker
+* Install [kind](https://kind.sigs.k8s.io/docs/user/quick-start) before we start
+  * note kind support many container runtime, if you choose other container runtime free feel to use it and change command to suit your container runtime
+* Docker is required and in up and running stat
+* cpu >= 4
+* free memory >= 8G
+* free disk >= 60G
+
+```bash
+# Create k8s cluster with kind
+$ kind create cluster
+# output
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:v1.29.2) 🖼 
+ ✓ Preparing nodes 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+Set kubectl context to "kind-kind"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kind
+
+Have a nice day! 👋
+
+# Check the container status
+$ docker ps | grep -i kindest
+74f2c42b481e   kindest/node:v1.29.2   "/usr/local/bin/entr…"   2 minutes ago   Up 2 minutes   127.0.0.1:42199->6443/tcp   kind-control-plane
+
+# enter container bash
+$ docker exec -it 74f2c42b481e /bin/bash
+
+# install git
+root@kind-control-plane:/# cd && apt update && apt install -y git
+
+# download open-hydra project
+root@kind-control-plane:# git clone https://github.com/openhydra/open-hydra.git
+
+# deploy mysql-operator
+root@kind-control-plane:# cd open-hydra
+root@kind-control-plane:# kubectl apply -f deploy/mysql-operator-crds.yaml
+root@kind-control-plane:# kubectl apply -f deploy/mysql-operator.yaml
+# wait a few minutes for mysql-operator to be ready
+root@kind-control-plane:# kubectl get pods -n mysql-operator
+NAME                              READY   STATUS    RESTARTS   AGE
+mysql-operator-754799c79b-r4gv8   1/1     Running   0          99s
+# deploy mysql instance
+root@kind-control-plane:# kubectl apply -f deploy/mysql-instance.yaml
+# wait a few minutes for mysql to be ready
+root@kind-control-plane:# kubectl get pods -n mysql-operator
+# output
+# we should see mycluster-0 and mycluster-router-xxxx appears
+NAME                                READY   STATUS    RESTARTS   AGE
+mycluster-0                         2/2     Running   0          4m6s
+mycluster-router-5c6646bfd5-r5q5q   1/1     Running   0          43s
+
+# deploy open-hydra-server 
+# create some directories for open-hydra-server
+root@kind-control-plane:# mkdir /mnt/public-dataset
+root@kind-control-plane:# mkdir /mnt/public-course
+root@kind-control-plane:# mkdir /mnt/jupyter-lab
+root@kind-control-plane:# mkdir /mnt/public-vscode
+# create open-hydra namespace
+root@kind-control-plane:# kubectl create ns open-hydra
+# replace localhost with your container ip
+root@kind-control-plane:# ip=$(ip a show dev eth0 | grep -w inet | awk '{print $2}' | cut -d "/" -f 1)
+root@kind-control-plane:# sed -i "s/localhost/$ip/g" deploy/install-open-hydra.yaml
+# create open-hydra deployment
+root@kind-control-plane:# kubectl apply -f deploy/install-open-hydra.yaml
+# check it out
+root@kind-control-plane:# kubectl get pods -n open-hydra
+# output
+NAME                                 READY   STATUS    RESTARTS   AGE
+open-hydra-server-5fcdff6645-94h46   1/1     Running   0          109s
+
+# create an admin account
+root@kind-control-plane:# kubectl create -f deploy/user-admin.yaml
+# view user
+root@kind-control-plane:# kubectl get openhydrausers -o yaml
+# output
+apiVersion: v1
+items:
+- apiVersion: open-hydra-server.openhydra.io/v1
+  kind: OpenHydraUser
+  metadata:
+    creationTimestamp: null
+    name: admin
+  spec:
+    chineseName: admin
+    description: admin
+    password: openhydra
+    role: 1
+  status: {}
+kind: List
+metadata:
+  resourceVersion: ""
+
+# Due to the large size of lab image you probably want to download it before we run it
+root@kind-control-plane:# ctr -n k8s.io i pull docker.io/99cloud/jupyter:Python-3.8.18-dual-lan
+# ensure image is proper downloaded and loaded into containerd
+docker.io/99cloud/jupyter:Python-3.8.18-dual-lan:                                 resolved       |++++++++++++++++++++++++++++++++++++++| 
+manifest-sha256:5c4fa3b3103bdbc1feacdd0ed0880be4b3ddd8913e46d3b7ade3e7b0f1d5ebd1: done           |++++++++++++++++++++++++++++++++++++++| 
+config-sha256:999c96811ac8bac0a4d41c67bb628dc01b4e529794133a791b953f11fc7f4039:   done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:82c434eb639ddb964f5089c4489d84ab87f6e6773766a5db3e90ba4576aa1fcd:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:827606935cb54e3918e80f62abe94946b2b42b7dba0da6d6451c4a040fa8d873:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:3dd181f9be599de628e1bc6d868d517125e07f968824bcf7b7ed8d28ad1026b1:    done           |++++++++++++++++++++++++++++++++++++++| 
+elapsed: 638.3s                                                                   total:  60.4 M (96.8 KiB/s) 
+
+# deploy dashboard
+root@kind-control-plane:# kubectl apply -f deploy/reverse-proxy.yaml
+# check the result
+root@kind-control-plane:# kubectl get deploy,svc,ep -n open-hydra reverse-proxy
+# output
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/reverse-proxy   1/1     1            1           95s
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/reverse-proxy   ClusterIP   10.96.146.137   <none>        80/TCP    95s
+
+NAME                      ENDPOINTS        AGE
+endpoints/reverse-proxy   10.244.0.12:80   95s
+
+# Download the dashboard project
+root@kind-control-plane:# cd && git clone https://github.com/openhydra/open-hydra-ui.git
+root@kind-control-plane:# cd open-hydra-ui
+root@kind-control-plane:# proxy=$(kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
+root@kind-control-plane:# sed -i "s/{address}/${proxy}/g" deploy/nginx.conf
+root@kind-control-plane:# kubectl create cm open-hydra-ui-config --from-file deploy/nginx.conf -n open-hydra
+root@kind-control-plane:# kubectl apply -f deploy/deploy.yaml
+
+# All set, check container's ip before we quit container bash
+root@kind-control-plane:# echo $ip
+# output
+172.18.0.2
+# exit the container
+root@kind-control-plane:# exit
+
+# Access dashboard 
+# Open your browser and visit http://172.18.0.2:30001
+# login with admin/openhydra
+```
+
+## Deploy openhydra
 
 ### Use pre-built aio iso image
 
@@ -140,7 +286,7 @@ service/reverse-proxy   ClusterIP   10.96.66.183   <none>        80/TCP    94m
 # download open-hydra-ui project
 $ cd open-hydra-ui/deploy
 # modify nginx.conf replace {address} with reverse-proxy service cluster ip
-$ proxy=$(sudo kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
+$ proxy=$(kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
 $ sed -i "s/{address}/${proxy}/g" nginx.conf
 # create ui config
 $ kubectl create cm open-hydra-ui-config --from-file nginx.conf -n open-hydra

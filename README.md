@@ -28,6 +28,148 @@ open-hydra 是一个专注于 `机器学习|深度学习` 教育培训一体机�
 
 ## 快速开始
 
+* 我们要在 docker 里快速运行我们的 open-hydra 项目
+* 请预先准备 [kind](https://kind.sigs.k8s.io/docs/user/quick-start)
+* 请确认 docker 已经正常工作
+* cpu >= 4
+* 内存 >= 8G
+* 磁盘 >= 60G
+
+```bash
+# 使用 kind 创建集群
+$ kind create cluster
+# 输出
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:v1.29.2) 🖼 
+ ✓ Preparing nodes 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+Set kubectl context to "kind-kind"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kind
+
+Have a nice day! 👋
+
+# 检查容器
+$ docker ps | grep -i kindest
+74f2c42b481e   kindest/node:v1.29.2   "/usr/local/bin/entr…"   2 minutes ago   Up 2 minutes   127.0.0.1:42199->6443/tcp   kind-control-plane
+
+# 进入容器
+$ docker exec -it 74f2c42b481e /bin/bash
+
+# 安装 git 工具
+root@kind-control-plane:/# cd && apt update && apt install -y git
+
+# 下载 open-hydra 项目
+root@kind-control-plane:# git clone https://github.com/openhydra/open-hydra.git
+
+# 部署 mysql-operator
+root@kind-control-plane:# cd open-hydra
+root@kind-control-plane:# kubectl apply -f deploy/mysql-operator-crds.yaml
+root@kind-control-plane:# kubectl apply -f deploy/mysql-operator.yaml
+# 等待几分钟，直到 mysql-operator 运行
+root@kind-control-plane:# kubectl get pods -n mysql-operator
+NAME                              READY   STATUS    RESTARTS   AGE
+mysql-operator-754799c79b-r4gv8   1/1     Running   0          99s
+# 部署 mysql 实例
+root@kind-control-plane:# kubectl apply -f deploy/mysql-instance.yaml
+# 等待几分钟，直到 mysql 实例运行，取决于您的网配置可能需要3到10分钟左右
+root@kind-control-plane:# kubectl get pods -n mysql-operator
+# 输出，一个实例会有一个 router 出现
+NAME                                READY   STATUS    RESTARTS   AGE
+mycluster-0                         2/2     Running   0          4m6s
+mycluster-router-5c6646bfd5-r5q5q   1/1     Running   0          43s
+
+# 部署 open-hydra
+root@kind-control-plane:# mkdir /mnt/public-dataset
+root@kind-control-plane:# mkdir /mnt/public-course
+root@kind-control-plane:# mkdir /mnt/jupyter-lab
+root@kind-control-plane:# mkdir /mnt/public-vscode
+root@kind-control-plane:# kubectl create ns open-hydra
+# 替换显示 ip 为你的容器 ip
+root@kind-control-plane:# ip=$(ip a show dev eth0 | grep -w inet | awk '{print $2}' | cut -d "/" -f 1)
+root@kind-control-plane:# sed -i "s/localhost/$ip/g" deploy/install-open-hydra.yaml
+# 创建 open-hydra deployment
+root@kind-control-plane:# kubectl apply -f deploy/install-open-hydra.yaml
+# 检查结果
+root@kind-control-plane:# kubectl get pods -n open-hydra
+# 输出
+NAME                                 READY   STATUS    RESTARTS   AGE
+open-hydra-server-5fcdff6645-94h46   1/1     Running   0          109s
+
+# 创建一个 admin 账号
+root@kind-control-plane:# kubectl create -f deploy/user-admin.yaml
+# 检查结果
+root@kind-control-plane:# kubectl get openhydrausers -o yaml
+# 输出
+apiVersion: v1
+items:
+- apiVersion: open-hydra-server.openhydra.io/v1
+  kind: OpenHydraUser
+  metadata:
+    creationTimestamp: null
+    name: admin
+  spec:
+    chineseName: admin
+    description: admin
+    password: openhydra
+    role: 1
+  status: {}
+kind: List
+metadata:
+  resourceVersion: ""
+
+# 手动下载 lab 镜像，由于装有 cuda 的镜像很大，我们手动下载这个镜像
+root@kind-control-plane:# ctr -n k8s.io i pull docker.io/99cloud/jupyter:Python-3.8.18-dual-lan
+# 等待片刻后，检查镜像是否下载成功
+docker.io/99cloud/jupyter:Python-3.8.18-dual-lan:                                 resolved       |++++++++++++++++++++++++++++++++++++++| 
+manifest-sha256:5c4fa3b3103bdbc1feacdd0ed0880be4b3ddd8913e46d3b7ade3e7b0f1d5ebd1: done           |++++++++++++++++++++++++++++++++++++++| 
+config-sha256:999c96811ac8bac0a4d41c67bb628dc01b4e529794133a791b953f11fc7f4039:   done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:82c434eb639ddb964f5089c4489d84ab87f6e6773766a5db3e90ba4576aa1fcd:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:827606935cb54e3918e80f62abe94946b2b42b7dba0da6d6451c4a040fa8d873:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1:    done           |++++++++++++++++++++++++++++++++++++++| 
+layer-sha256:3dd181f9be599de628e1bc6d868d517125e07f968824bcf7b7ed8d28ad1026b1:    done           |++++++++++++++++++++++++++++++++++++++| 
+elapsed: 638.3s                                                                   total:  60.4 M (96.8 KiB/s) 
+
+# 部署 ui 服务
+root@kind-control-plane:# kubectl apply -f deploy/reverse-proxy.yaml
+# 验证结果
+root@kind-control-plane:# kubectl get deploy,svc,ep -n open-hydra reverse-proxy
+# 输出
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/reverse-proxy   1/1     1            1           95s
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/reverse-proxy   ClusterIP   10.96.146.137   <none>        80/TCP    95s
+
+NAME                      ENDPOINTS        AGE
+endpoints/reverse-proxy   10.244.0.12:80   95s
+
+# 下载 open-hydra-ui 项目
+root@kind-control-plane:# cd && git clone https://github.com/openhydra/open-hydra-ui.git
+root@kind-control-plane:# cd open-hydra-ui
+root@kind-control-plane:# proxy=$(kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
+root@kind-control-plane:# sed -i "s/{address}/${proxy}/g" deploy/nginx.conf
+root@kind-control-plane:# kubectl create cm open-hydra-ui-config --from-file deploy/nginx.conf -n open-hydra
+root@kind-control-plane:# kubectl apply -f deploy/deploy.yaml
+
+# 大功告成，查看 ip 地址，退出容器
+root@kind-control-plane:# echo $ip
+# 输出
+172.18.0.2
+# 退出
+root@kind-control-plane:# exit
+
+# 访问 dashboard 
+# 打开浏览器访问 http://172.18.0.2:30001
+# 使用 admin/openhydra 登录
+```
+
+## 安装部署
+
 ### 使用预先打包的 iso 一体机快速安装
 
 我们提供打包的好的带有 ubuntu 操作系统的 iso 镜像方便用户直接快速部署相关组件，详见 [iso 安装指南](docs/iso-installation-guide.md)
@@ -138,7 +280,7 @@ service/reverse-proxy   ClusterIP   10.96.66.183   <none>        80/TCP    94m
 # 下载 open-hydra-ui 项目
 $ cd open-hydra-ui/deploy
 # 修改 nginx 配置里的 {address} 为反向代理的地址
-$ proxy=$(sudo kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
+$ proxy=$(kubectl get svc reverse-proxy -o jsonpath='{.spec.clusterIP}' -n open-hydra)
 $ sed -i "s/{address}/${proxy}/g" nginx.conf
 # 创建 ui 配置
 $ kubectl create cm open-hydra-ui-config --from-file nginx.conf -n open-hydra
