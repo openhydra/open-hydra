@@ -25,6 +25,13 @@ open-hydra is a management platform dedicated to `machine learning|deep learning
 
 ![open-hydra](../images/arch-02.png)
 
+## Compile from source code
+
+```bash
+# output to cmd/open-hydra-server
+$ make go-build
+```
+
 ## Quick Start
 
 * We will run open-hydra in docker
