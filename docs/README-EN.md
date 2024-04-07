@@ -102,6 +102,10 @@ root@kind-control-plane:# kubectl create ns open-hydra
 # replace localhost with your container ip
 root@kind-control-plane:# ip=$(ip a show dev eth0 | grep -w inet | awk '{print $2}' | cut -d "/" -f 1)
 root@kind-control-plane:# sed -i "s/localhost/$ip/g" deploy/install-open-hydra.yaml
+# use 1 cpu only
+root@kind-control-plane:# sed  -i "s/2000/1000/g" deploy/install-open-hydra.yaml
+# use 4g memory
+root@kind-control-plane:# sed  -i "s/8192/4096/g" deploy/install-open-hydra.yaml
 # create open-hydra deployment
 root@kind-control-plane:# kubectl apply -f deploy/install-open-hydra.yaml
 # check it out

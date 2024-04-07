@@ -100,6 +100,11 @@ root@kind-control-plane:# kubectl create ns open-hydra
 # 替换显示 ip 为你的容器 ip
 root@kind-control-plane:# ip=$(ip a show dev eth0 | grep -w inet | awk '{print $2}' | cut -d "/" -f 1)
 root@kind-control-plane:# sed -i "s/localhost/$ip/g" deploy/install-open-hydra.yaml
+# 降低 lab 的消耗的资源
+# 降低为使用 1 cpu
+root@kind-control-plane:# sed  -i "s/2000/1000/g" deploy/install-open-hydra.yaml
+# 降低为内存 4g
+root@kind-control-plane:# sed  -i "s/8192/4096/g" deploy/install-open-hydra.yaml
 # 创建 open-hydra deployment
 root@kind-control-plane:# kubectl apply -f deploy/install-open-hydra.yaml
 # 检查结果
