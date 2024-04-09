@@ -161,6 +161,7 @@ func (db *Faker) DeleteCourse(name string) error {
 }
 
 // implements IDataBaseCourse lists all courses
+// add a comment for ci test
 func (db *Faker) ListCourses() (xCourseV1.CourseList, error) {
 	result := xCourseV1.CourseList{}
 	result.Kind = "List"
