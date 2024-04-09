@@ -50,7 +50,7 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
         run: |
-          echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
+          echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin registry.cn-shanghai.aliyuncs.com
 
       - name: Run buildx
         run: |
