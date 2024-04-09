@@ -57,8 +57,8 @@ defaultGpuPerDevice: 0 # gpu per pod default 0, keep it 0 unless you have tons o
 datasetBasePath: /mnt/public-dataset # where dataset keep on server dir
 datasetVolumeType: hostpath # so far we only support hostpath
 jupyterLabHostBaseDir: /mnt/jupyter-lab # where user custom code of jupyter-lab on server dir
-imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18"
-vscodeImageRepo: "docker.io/99cloud/vscode:1.85.1"
+imageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18"
+vscodeImageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1"
 defaultGpuDriver: nvidia.com/gpu
 serverIP: "172.16.151.70"
 patchResourceNotRelease: true

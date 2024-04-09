@@ -136,9 +136,9 @@ metadata:
   resourceVersion: ""
 
 # 手动下载 lab 镜像，由于装有 cuda 的镜像很大，我们手动下载这个镜像
-root@kind-control-plane:# ctr -n k8s.io i pull docker.io/99cloud/jupyter:Python-3.8.18-dual-lan
+root@kind-control-plane:# ctr -n k8s.io i pull registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan
 # 等待片刻后，检查镜像是否下载成功
-docker.io/99cloud/jupyter:Python-3.8.18-dual-lan:                                 resolved       |++++++++++++++++++++++++++++++++++++++| 
+registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan:                                 resolved       |++++++++++++++++++++++++++++++++++++++| 
 manifest-sha256:5c4fa3b3103bdbc1feacdd0ed0880be4b3ddd8913e46d3b7ade3e7b0f1d5ebd1: done           |++++++++++++++++++++++++++++++++++++++| 
 config-sha256:999c96811ac8bac0a4d41c67bb628dc01b4e529794133a791b953f11fc7f4039:   done           |++++++++++++++++++++++++++++++++++++++| 
 layer-sha256:82c434eb639ddb964f5089c4489d84ab87f6e6773766a5db3e90ba4576aa1fcd:    done           |++++++++++++++++++++++++++++++++++++++| 

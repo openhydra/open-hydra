@@ -47,8 +47,8 @@ data:
     datasetBasePath: /mnt/public-dataset
     datasetVolumeType: hostpath
     jupyterLabHostBaseDir: /mnt/jupyter-lab
-    imageRepo: "docker.io/99cloud/jupyter:Python-3.8.18-dual-lan"
-    vscodeImageRepo: "docker.io/99cloud/vscode:1.85.1"
+    imageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan"
+    vscodeImageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1"
     defaultGpuDriver: nvidia.com/gpu
     serverIP: "localhost"
     patchResourceNotRelease: true
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: open-hydra-admin
       containers:
       - name: open-hydra-api
-        image: docker.io/99cloud/open-hydra-server:latest
+        image: registry.cn-shanghai.aliyuncs.com/openhydra/open-hydra-server:latest
         imagePullPolicy: IfNotPresent
         command: ["open-hydra-server", "run","--open-hydra-server-config", "/etc/open-hydra/config.yaml"]
         ports:

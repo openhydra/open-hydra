@@ -1,6 +1,6 @@
 # Makefile
 
-REGISTRY ?= docker.io/99cloud
+REGISTRY ?= registry.cn-shanghai.aliyuncs.com/openhydra
 TAG ?=
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)

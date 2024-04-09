@@ -44,7 +44,7 @@ $ journalctl -u maas -f
 
 ```bash
 # Manually download the image
-$ ctr -n k8s.io i pull docker.io/99cloud/open-hydra-server:latest
+$ ctr -n k8s.io i pull registry.cn-shanghai.aliyuncs.com/openhydra/open-hydra-server:latest
 # Restart open-hydra server
 $ kubectl scale deployment open-hydra-server --replicas=0 -n open-hydra
 # Wait for 3 seconds
