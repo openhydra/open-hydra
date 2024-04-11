@@ -91,4 +91,8 @@ go-build:
 
 .PHONY: image
 image: go-build
-	docker build -t $(REGISTRY)/open-hydra-server:$(IMAGETAG) .
+	docker build -t $(REGISTRY)/open-hydra-server:$(IMAGETAG) --load .
+
+.PHONY: image-no-container
+image-no-container: go-build
+	docker build -f hack/builder/Dockerfile -t $(REGISTRY)/open-hydra-server:$(IMAGETAG) --load .

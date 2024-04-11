@@ -4,23 +4,24 @@ defaultRamPerDevice: 8192
 defaultGpuPerDevice: 0
 datasetBasePath: /mnt/public-dataset
 datasetVolumeType: hostpath
-datasetStudentMountPath: /root/public-dataset
 jupyterLabHostBaseDir: /mnt/jupyter-lab
-imageRepo: "maas.io/open-hydra/open-hydra:beta-1"
-defaultGpuDriver: ""
-patchResourceNotRelease: true
+imageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan"
+vscodeImageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1"
+defaultGpuDriver: nvidia.com/gpu
 serverIP: "localhost"
+patchResourceNotRelease: true
+disableAuth: true
 mysqlConfig:
-  address: 10.0.0.1
+  address: mycluster-instances.mysql-operator.svc
   port: 3306
   username: root
-  password: root
-  databaseName: open-hydra
-  protocol: tcp
+  password: openhydra
+  databaseName: openhydra
+  protocol: tcp 
 leaderElection:
   leaderElect: false
-  leaseDuration: 30s
-  renewDeadline: 15s
+  leaseDuration: 30s 
+  renewDeadline: 15s 
   retryPeriod: 5s
   resourceLock: endpointsleases
   resourceName: open-hydra-api-leader-lock

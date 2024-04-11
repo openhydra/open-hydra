@@ -58,6 +58,7 @@ users:
 			targetConfig, err := LoadConfig(configFile2, kubeConfigPath)
 			Expect(err).To(BeNil())
 			Expect(targetConfig.LeaderElection).To(Equal(testConfig.LeaderElection))
+			Expect(targetConfig.AuthDelegateConfig).To(BeNil())
 		})
 		AfterEach(func() {
 			//_ = util.DeleteFile(configFile)

@@ -1,0 +1,34 @@
+podAllocatableLimit: -1
+defaultCpuPerDevice: 2000
+defaultRamPerDevice: 8192
+defaultGpuPerDevice: 0
+datasetBasePath: /mnt/public-dataset
+datasetVolumeType: hostpath
+jupyterLabHostBaseDir: /mnt/jupyter-lab
+imageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan"
+vscodeImageRepo: "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1"
+defaultGpuDriver: nvidia.com/gpu
+serverIP: "localhost"
+patchResourceNotRelease: true
+disableAuth: true
+mysqlConfig:
+  address: mycluster-instances.mysql-operator.svc
+  port: 3306
+  username: root
+  password: openhydra
+  databaseName: openhydra
+  protocol: tcp 
+leaderElection:
+  leaderElect: false
+  leaseDuration: 30s 
+  renewDeadline: 15s 
+  retryPeriod: 5s
+  resourceLock: endpointsleases
+  resourceName: open-hydra-api-leader-lock
+  resourceNamespace: default
+authDelegateConfig:
+  keystoneConfig:
+    endpoint: http://keystone.openhydra.svc:5000
+    username: admin
+    password: admin
+    domainId: default

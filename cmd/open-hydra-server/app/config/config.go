@@ -92,14 +92,15 @@ type (
 		DefaultGpuDriver        string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
 		ServerIP                string `json:"server_ip" yaml:"serverIP"`
 		KubeConfig              *rest.Config
-		LeaderElection          *LeaderElection `json:"leader_election" yaml:"leaderElection,omitempty"`
-		MySqlConfig             *MySqlConfig    `json:"mysql_config" yaml:"mysqlConfig,omitempty"`
-		EtcdConfig              *EtcdConfig     `json:"etcd_config" yaml:"etcdConfig,omitempty"`
-		DBType                  string          `json:"db_type" yaml:"dbType"`
-		DisableAuth             bool            `json:"disable_auth" yaml:"disableAuth"`
-		PatchResourceNotRelease bool            `json:"patch_resource_not_release" yaml:"patchResourceNotRelease"`
-		CpuOverCommitRate       uint8           `json:"cpu_over_commit_rate" yaml:"cpuOverCommitRate"`
-		MemoryOverCommitRate    uint8           `json:"memory_over_commit_rate" yaml:"memoryOverCommitRate"`
+		LeaderElection          *LeaderElection     `json:"leader_election" yaml:"leaderElection,omitempty"`
+		MySqlConfig             *MySqlConfig        `json:"mysql_config" yaml:"mysqlConfig,omitempty"`
+		EtcdConfig              *EtcdConfig         `json:"etcd_config" yaml:"etcdConfig,omitempty"`
+		DBType                  string              `json:"db_type" yaml:"dbType"`
+		DisableAuth             bool                `json:"disable_auth" yaml:"disableAuth"`
+		PatchResourceNotRelease bool                `json:"patch_resource_not_release" yaml:"patchResourceNotRelease"`
+		CpuOverCommitRate       uint8               `json:"cpu_over_commit_rate" yaml:"cpuOverCommitRate"`
+		MemoryOverCommitRate    uint8               `json:"memory_over_commit_rate" yaml:"memoryOverCommitRate"`
+		AuthDelegateConfig      *AuthDelegateConfig `json:"auth_delegate_config" yaml:"authDelegateConfig,omitempty"`
 	}
 )
 
@@ -157,6 +158,21 @@ type MySqlConfig struct {
 	Password     string `json:"password" yaml:"password"`
 	DataBaseName string `json:"database_name" yaml:"databaseName"`
 	Protocol     string `json:"protocol" yaml:"protocol"`
+}
+
+type AuthDelegateConfig struct {
+	// if KeystoneConfig is set to nil then auth plugin will fall backup to database auth
+	KeystoneConfig *KeystoneConfig `json:"keystone_config" yaml:"keystoneConfig"`
+}
+
+type KeystoneConfig struct {
+	Endpoint           string `json:"endpoint" yaml:"endpoint"`
+	Username           string `json:"username" yaml:"username"`
+	Password           string `json:"password" yaml:"password"`
+	DomainId           string `json:"domain_id" yaml:"domainId"`
+	ProjectId          string `json:"project_id" yaml:"projectId"`
+	TokenKeyInResponse string `json:"token_key_in_response" yaml:"tokenKeyInResponse"`
+	TokenKeyInRequest  string `json:"token_key_in_request" yaml:"tokenKeyInRequest"`
 }
 
 func DefaultEtcdConfig() *EtcdConfig {

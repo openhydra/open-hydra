@@ -10,6 +10,7 @@ type IDataBase interface {
 	IDataBaseDataset
 	IDataBaseUser
 	IDataBaseCourse
+	InitDb() error
 }
 
 type IDataBaseUser interface {
@@ -25,8 +26,6 @@ type IDataBaseUser interface {
 	ListUsers() (xUserV1.OpenHydraUserList, error)
 	// Login a user
 	LoginUser(name, password string) (*xUserV1.OpenHydraUser, error)
-	//InitDb
-	InitDb() error
 }
 
 type IDataBaseDataset interface {
@@ -40,8 +39,6 @@ type IDataBaseDataset interface {
 	DeleteDataset(name string) error
 	// List all datasets
 	ListDatasets() (xDatasetV1.DatasetList, error)
-	//InitDb
-	InitDb() error
 }
 
 type IDataBaseCourse interface {
