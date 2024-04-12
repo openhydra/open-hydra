@@ -70,10 +70,10 @@ data:
       resourceNamespace: default
     authDelegateConfig:
       keystoneConfig:
-      endpoint: http://keystone.openhydra.svc:5000
-      username: admin
-      password: admin
-      domainId: default
+        endpoint: http://keystone.openhydra.svc:5000
+        username: admin
+        password: admin
+        domainId: default
 kind: ConfigMap
 metadata:
   name: open-hydra-config
