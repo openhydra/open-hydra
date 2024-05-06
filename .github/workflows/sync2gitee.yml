@@ -9,4 +9,4 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.GITEE_SECRET }}
         with:
           source-repo: "https://github.com/openhydra/open-hydra.git"
-          destination-repo: "https://gitee.com/sephiroth/open-hydra.git"
+          destination-repo: "git@gitee.com:sephiroth/open-hydra.git"
