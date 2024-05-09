@@ -8,10 +8,10 @@
 
 ## 最小硬件要求
 
-* (optional)nvidia cuda gpu >= 1
+* CPU core >= 8
 * 250 GB 硬盘 >= 1
-* core >= 8
 * memory >= 32 GB
+* (可选)nvidia cuda gpu >= 1(driver: 525.125.06)
 
 ## usb 包含的组件介绍
 

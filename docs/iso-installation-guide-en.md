@@ -8,10 +8,10 @@ This document describes how to use a pre-packaged image to install the operating
 
 ## Minimum Hardware Requirements
 
-* (optional)nvidia gpu >= 1 (driver: 525.125.06)
+* CPU core >= 8
 * 250 GB 硬盘 >= 1
-* core >= 8
 * memory >= 32 GB
+* (optional)nvidia gpu >= 1 (driver: 525.125.06)
 
 ## Components included in the USB
 
