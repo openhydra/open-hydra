@@ -179,7 +179,7 @@ spec:
 
 apiVersion: v1
 data:
-  sandbox: |
+  plugins: |
     {
         "sandboxes": {
             "jupyter-lab": {
@@ -232,5 +232,5 @@ data:
     }
 kind: ConfigMap
 metadata:
-  name: openhydra-sandbox
+  name: openhydra-plugin
   namespace: open-hydra

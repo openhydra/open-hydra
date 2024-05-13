@@ -12,15 +12,17 @@ type GpuSet struct {
 	Gpu           uint8  `json:"gpu"`
 }
 
+// +k8s:openapi-gen=true
 type Sandbox struct {
-	CPUImageName    string   `json:"cpuImageName"`
-	GPUImageName    string   `json:"gpuImageName"`
-	Command         []string `json:"command"`
-	Description     string   `json:"description"`
-	DevelopmentInfo []string `json:"developmentInfo"`
-	Status          string   `json:"status"`
+	CPUImageName    string   `json:"cpuImageName,omitempty"`
+	GPUImageName    string   `json:"gpuImageName,omitempty"`
+	Command         []string `json:"command,omitempty"`
+	Description     string   `json:"description,omitempty"`
+	DevelopmentInfo []string `json:"developmentInfo,omitempty"`
+	Status          string   `json:"status,omitempty"`
 }
 
-type SandboxList struct {
+// +k8s:openapi-gen=true
+type PluginList struct {
 	Sandboxes map[string]Sandbox `json:"sandboxes"`
 }

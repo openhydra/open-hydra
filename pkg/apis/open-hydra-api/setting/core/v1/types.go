@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"open-hydra/pkg/open-hydra/apis"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,7 +25,8 @@ type SettingStatus struct {
 }
 
 type SettingSpec struct {
-	DefaultGpuPerDevice uint8 `json:"default_gpu_per_device" yaml:"defaultGpuPerDevice"`
+	DefaultGpuPerDevice uint8           `json:"default_gpu_per_device" yaml:"defaultGpuPerDevice"`
+	PluginList          apis.PluginList `json:"plugin_list,omitempty" yaml:"pluginList,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

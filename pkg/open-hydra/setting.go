@@ -1,9 +1,11 @@
 package openhydra
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	xSetting "open-hydra/pkg/apis/open-hydra-api/setting/core/v1"
+	"open-hydra/pkg/open-hydra/apis"
 
 	"open-hydra/pkg/util"
 
@@ -25,6 +27,20 @@ func (builder *OpenHydraRouteBuilder) GetSettingRouteHandler(request *restful.Re
 	result.Name = request.PathParameter("name")
 	result.Spec = xSetting.SettingSpec{}
 	result.Spec.DefaultGpuPerDevice = builder.Config.DefaultGpuPerDevice
+	// now get all plugins from configmap
+	cm, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
+		return
+	}
+	jsonData := cm.Data["plugins"]
+	var plugins apis.PluginList
+	err = json.Unmarshal([]byte(jsonData), &plugins)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal json: %v", err))
+		return
+	}
+	result.Spec.PluginList = plugins
 	response.WriteHeaderAndEntity(http.StatusOK, result)
 }
 

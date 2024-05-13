@@ -331,6 +331,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserList":   schema_open_hydra_api_user_core_v1_OpenHydraUserList(ref),
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserSpec":   schema_open_hydra_api_user_core_v1_OpenHydraUserSpec(ref),
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserStatus": schema_open_hydra_api_user_core_v1_OpenHydraUserStatus(ref),
+		"open-hydra/pkg/open-hydra/apis.PluginList":                           schema_open_hydra_pkg_open_hydra_apis_PluginList(ref),
+		"open-hydra/pkg/open-hydra/apis.Sandbox":                              schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref),
 	}
 }
 
@@ -15678,6 +15680,12 @@ func schema_open_hydra_api_device_core_v1_DeviceSpec(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
+					"sandboxName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -15803,10 +15811,18 @@ func schema_open_hydra_api_setting_core_v1_SettingSpec(ref common.ReferenceCallb
 							Format:  "byte",
 						},
 					},
+					"plugin_list": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("open-hydra/pkg/open-hydra/apis.PluginList"),
+						},
+					},
 				},
 				Required: []string{"default_gpu_per_device"},
 			},
 		},
+		Dependencies: []string{
+			"open-hydra/pkg/open-hydra/apis.PluginList"},
 	}
 }
 
@@ -16142,6 +16158,99 @@ func schema_open_hydra_api_user_core_v1_OpenHydraUserStatus(ref common.Reference
 			SchemaProps: spec.SchemaProps{
 				Description: "OpenHydraUserSpecUserStatus defines the observed state of Device of cluster",
 				Type:        []string{"object"},
+			},
+		},
+	}
+}
+
+func schema_open_hydra_pkg_open_hydra_apis_PluginList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"sandboxes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("open-hydra/pkg/open-hydra/apis.Sandbox"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"sandboxes"},
+			},
+		},
+		Dependencies: []string{
+			"open-hydra/pkg/open-hydra/apis.Sandbox"},
+	}
+}
+
+func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"cpuImageName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"gpuImageName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"command": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"description": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"developmentInfo": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 	}

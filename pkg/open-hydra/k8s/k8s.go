@@ -377,3 +377,14 @@ func (help *DefaultHelper) DeleteUserPod(label, namespace string, client *kubern
 	}
 	return nil
 }
+
+func (help *DefaultHelper) GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error) {
+	if client == nil {
+		return nil, fmt.Errorf("client is nil")
+	}
+	cm, err := client.CoreV1().ConfigMaps(namespace).Get(context.Background(), name, metaV1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return cm, nil
+}

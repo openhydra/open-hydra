@@ -22,6 +22,7 @@ type IOpenHydraK8sHelper interface {
 	GetUserService(label, namespace string, client *kubernetes.Clientset) (*coreV1.Service, error)
 	DeleteUserReplicaSet(label, namespace string, client *kubernetes.Clientset) error
 	DeleteUserPod(label, namespace string, client *kubernetes.Clientset) error
+	GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error)
 }
 
 func NewDefaultK8sHelper() IOpenHydraK8sHelper {

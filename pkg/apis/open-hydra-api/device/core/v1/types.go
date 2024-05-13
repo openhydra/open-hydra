@@ -41,6 +41,7 @@ type DeviceSpec struct {
 	JupyterLabURL     string `json:"jupyterLabUrl,omitempty"`
 	IDEType           string `json:"ideType,omitempty"`
 	VSCodeURL         string `json:"vsCodeUrl,omitempty"`
+	SandboxName       string `json:"sandboxName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

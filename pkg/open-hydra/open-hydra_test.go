@@ -754,6 +754,8 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			err = json.Unmarshal(result, &target)
 			Expect(err).To(BeNil())
 			Expect(target.Spec.DefaultGpuPerDevice).To(Equal(uint8(0)))
+			Expect(len(target.Spec.PluginList.Sandboxes)).To(Equal(1))
+			Expect(target.Spec.PluginList.Sandboxes["test"].CPUImageName).To(Equal("test"))
 		})
 
 		It("open-hydra update setting by teacher should be ok", func() {

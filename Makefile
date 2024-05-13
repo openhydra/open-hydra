@@ -37,7 +37,7 @@ endif
 
 .PHONY: update-openapi
 update-openapi:
-	$(GOBIN)/openapi-gen --input-dirs open-hydra/pkg/apis/open-hydra-api/course/core/v1,open-hydra/pkg/apis/open-hydra-api/setting/core/v1,open-hydra/pkg/apis/open-hydra-api/summary/core/v1,open-hydra/pkg/apis/open-hydra-api/device/core/v1,open-hydra/pkg/apis/open-hydra-api/user/core/v1,open-hydra/pkg/apis/open-hydra-api/dataset/core/v1,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1 \
+	$(GOBIN)/openapi-gen --input-dirs open-hydra/pkg/open-hydra/apis,open-hydra/pkg/apis/open-hydra-api/course/core/v1,open-hydra/pkg/apis/open-hydra-api/setting/core/v1,open-hydra/pkg/apis/open-hydra-api/summary/core/v1,open-hydra/pkg/apis/open-hydra-api/device/core/v1,open-hydra/pkg/apis/open-hydra-api/user/core/v1,open-hydra/pkg/apis/open-hydra-api/dataset/core/v1,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1 \
 	--output-package open-hydra/pkg/generated/apis/openapi --output-base ./..  --go-header-file $(BOILERPLATE_DIR)/boilerplate.go.txt
 
 .PHONY: gen-device-deepcopy-set
