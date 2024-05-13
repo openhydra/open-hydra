@@ -174,3 +174,63 @@ spec:
     port: 443
   version: v1
   versionPriority: 15
+
+---
+
+apiVersion: v1
+data:
+  sandbox: |
+    {
+        "sandboxes": {
+            "jupyter-lab": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "command": [],
+                "description": "jupyter lab 是在线的 python 开发环境",
+                "developmentInfo": [
+                    "python-version: 3.8",
+                    "jupyter-lab-version: 4.0.9",
+                    "torch-version: 1.8.1+cu111",
+                    "cuda-version: 11.1",
+                    "lan: chinese | english"
+                ]
+            },
+            "vscode": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
+                "command": [],
+                "description": "vscode 是在线的代码编辑器,并可以自行编辑代码和安装各种开发环境",
+                "developmentInfo": [
+                    "vscode-version: 1.85.1"
+                ]
+            },
+            "keras": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "command": [],
+                "description": "keras 是在线的深度学习开发环境",
+                "developmentInfo": [
+                    "keras-version: 2.6.1",
+                    "tensorflow-version: 2.6.0",
+                    "jupyter-lab-version: 4.0.9",
+                    "lan: chinese | english"
+                ]
+            },
+            "PaddlePaddle": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                "command": [],
+                "description": "PaddlePaddle 是在线的深度学习开发环境",
+                "developmentInfo": [
+                    "PaddlePaddle-version: 2.1.0",
+                    "jupyter-lab-version: 4.0.9",
+                    "cuda-version: 12.0",
+                    "lan: chinese | english"
+                ]
+            }
+        }
+    }
+kind: ConfigMap
+metadata:
+  name: openhydra-sandbox
+  namespace: open-hydra
