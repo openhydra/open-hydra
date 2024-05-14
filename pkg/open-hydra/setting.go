@@ -1,11 +1,9 @@
 package openhydra
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	xSetting "open-hydra/pkg/apis/open-hydra-api/setting/core/v1"
-	"open-hydra/pkg/open-hydra/apis"
 
 	"open-hydra/pkg/util"
 
@@ -33,9 +31,8 @@ func (builder *OpenHydraRouteBuilder) GetSettingRouteHandler(request *restful.Re
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
 		return
 	}
-	jsonData := cm.Data["plugins"]
-	var plugins apis.PluginList
-	err = json.Unmarshal([]byte(jsonData), &plugins)
+
+	plugins, err := ParseJsonToPluginList(cm.Data["plugins"])
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal json: %v", err))
 		return

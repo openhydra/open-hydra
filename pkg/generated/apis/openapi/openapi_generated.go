@@ -333,6 +333,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserStatus": schema_open_hydra_api_user_core_v1_OpenHydraUserStatus(ref),
 		"open-hydra/pkg/open-hydra/apis.PluginList":                           schema_open_hydra_pkg_open_hydra_apis_PluginList(ref),
 		"open-hydra/pkg/open-hydra/apis.Sandbox":                              schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref),
+		"open-hydra/pkg/open-hydra/apis.VolumeMount":                          schema_open_hydra_pkg_open_hydra_apis_VolumeMount(ref),
 	}
 }
 
@@ -15656,25 +15657,7 @@ func schema_open_hydra_api_device_core_v1_DeviceSpec(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
-					"easyTrainUrl": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"jupyterLabUrl": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"ideType": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"vsCodeUrl": {
+					"sandboxURLs": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -16224,6 +16207,20 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"args": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 					"description": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -16250,7 +16247,77 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"ports": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: 0,
+										Type:    []string{"integer"},
+										Format:  "int32",
+									},
+								},
+							},
+						},
+					},
+					"volume_mounts": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("open-hydra/pkg/open-hydra/apis.VolumeMount"),
+									},
+								},
+							},
+						},
+					},
 				},
+			},
+		},
+		Dependencies: []string{
+			"open-hydra/pkg/open-hydra/apis.VolumeMount"},
+	}
+}
+
+func schema_open_hydra_pkg_open_hydra_apis_VolumeMount(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"mount_path": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"source_path": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"read_only": {
+						SchemaProps: spec.SchemaProps{
+							Default: false,
+							Type:    []string{"boolean"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"name", "mount_path", "source_path", "read_only"},
 			},
 		},
 	}

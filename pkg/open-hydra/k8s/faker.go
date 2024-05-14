@@ -6,6 +6,7 @@ import (
 
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -73,13 +74,21 @@ func (f *Fake) DeleteUserDeployment(label, namespace string, client *kubernetes.
 	delete(f.labelDeploy, label)
 	return nil
 }
-func (f *Fake) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
+func (f *Fake) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int) error {
 	label := fmt.Sprintf("%s=%s", OpenHydraUserLabelKey, studentID)
 	f.labelDeploy[label] = append(f.labelDeploy[label], appsV1.Deployment{})
 	f.namespacedDeploy[namespace] = append(f.namespacedDeploy[namespace], appsV1.Deployment{})
+	f.labelPod[label] = append(f.labelPod[label], coreV1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Labels: map[string]string{
+				OpenHydraUserLabelKey: studentID,
+				OpenHydraSandboxKey:   sandboxName,
+			},
+		},
+	})
 	return nil
 }
-func (f *Fake) CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset) error {
+func (f *Fake) CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset, ports map[string]int) error {
 	label := fmt.Sprintf("%s=%s", OpenHydraUserLabelKey, studentID)
 	f.labelService[label] = append(f.labelService[label], coreV1.Service{})
 	f.namespacedService[namespace] = append(f.namespacedService[namespace], coreV1.Service{})
@@ -116,7 +125,94 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 					"command": ["test"],
 					"description": "test",
 					"developmentInfo": ["test"],
-					"status": "test"
+					"status": "test",
+					"ports": [
+						8888
+					],
+					"volume_mounts": [
+						{
+							"name": "jupyter-lab",
+							"mount_path": "/root/notebook",
+							"source_path": "/mnt/jupyter-lab"
+						},
+						{
+							"name": "public-dataset",
+							"mount_path": "/root/notebook/dataset-public",
+							"source_path": "/mnt/public-dataset"
+						},
+						{
+							"name": "public-course",
+							"mount_path": "/mnt/public-course",
+							"source_path": "/mnt/public-course"
+						}
+					]
+				},
+				"jupyter-lab": {
+					"cpuImageName": "jupyter-lab-test",
+					"gpuImageName": "jupyter-lab-test",
+					"command": ["jupyter-lab-test"],
+					"description": "jupyter-lab-test",
+					"developmentInfo": ["jupyter-lab-test"],
+					"status": "running",
+					"ports": [
+						8888
+					],
+					"volume_mounts": [
+						{
+							"name": "jupyter-lab",
+							"mount_path": "/root/notebook",
+							"source_path": "/mnt/jupyter-lab"
+						},
+						{
+							"name": "public-dataset",
+							"mount_path": "/root/notebook/dataset-public",
+							"source_path": "/mnt/public-dataset"
+						},
+						{
+							"name": "public-course",
+							"mount_path": "/mnt/public-course",
+							"source_path": "/mnt/public-course"
+						}
+					]
+				},
+				"jupyter-lab-lot-ports": {
+					"cpuImageName": "jupyter-lab-test",
+					"gpuImageName": "jupyter-lab-test",
+					"command": ["jupyter-lab-test"],
+					"description": "jupyter-lab-test",
+					"developmentInfo": ["jupyter-lab-test"],
+					"status": "running",
+					"ports": [
+						8888,
+						8889,
+						8890,
+						8891
+					],
+					"volume_mounts": [
+						{
+							"name": "jupyter-lab",
+							"mount_path": "/root/notebook",
+							"source_path": "/mnt/jupyter-lab"
+						},
+						{
+							"name": "public-dataset",
+							"mount_path": "/root/notebook/dataset-public",
+							"source_path": "/mnt/public-dataset"
+						},
+						{
+							"name": "public-course",
+							"mount_path": "/mnt/public-course",
+							"source_path": "/mnt/public-course"
+						}
+					]
+				},
+				"jupyter-lab-not-ports": {
+					"cpuImageName": "jupyter-lab-test",
+					"gpuImageName": "jupyter-lab-test",
+					"command": ["jupyter-lab-test"],
+					"description": "jupyter-lab-test",
+					"developmentInfo": ["jupyter-lab-test"],
+					"status": "running"
 				}
 			}}`,
 		},

@@ -3,5 +3,6 @@ kind: Device
 metadata:
   name: admin
 spec:
-  ideType: vscode
+  sandboxName: vscode
   openHydraUsername: admin
+

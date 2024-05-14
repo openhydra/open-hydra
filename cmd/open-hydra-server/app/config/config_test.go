@@ -51,6 +51,7 @@ users:
 			Expect(targetConfig.DefaultGpuPerDevice).To(Equal(testConfig.DefaultGpuPerDevice))
 			Expect(targetConfig.MySqlConfig).To(Equal(DefaultMySqlConfig()))
 			Expect(targetConfig.EtcdConfig).To(Equal(DefaultEtcdConfig()))
+			Expect(targetConfig.MaximumPortsPerSandbox).To(Equal(uint8(3)))
 		})
 		It("test default value will not overwrite by empty value ", func() {
 			err := WriteConfig(configFile2, &testConfig2)

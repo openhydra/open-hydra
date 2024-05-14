@@ -74,7 +74,6 @@ type (
 		PublicCourseBasePath  string `json:"course_base_path" yaml:"courseBasePath"`
 		PublicDatasetMaxSize  int64  `json:"dataset_max_size" yaml:"datasetMaxSize"`
 		PublicCourseMaxSize   int64  `json:"course_max_size" yaml:"courseMaxSize"`
-		PublicVSCodeBasePath  string `json:"vscode_base_path" yaml:"vscodeBasePath"`
 		// default = "hostpath", hostpath or nfs
 		// hostpath: open-hydra-server will use hostpath to mount dataset most likely for aio server or test
 		// nfs: open-hydra-server will use nfs to mount dataset most likely for production
@@ -82,11 +81,7 @@ type (
 		// default = "/root/public-dataset"
 		PublicDatasetStudentMountPath string `json:"dataset_student_mount_path" yaml:"datasetStudentMountPath"`
 		PublicCourseStudentMountPath  string `json:"course_student_mount_path" yaml:"courseStudentMountPath"`
-		VSCodeWorkspaceMountPath      string `json:"vscode_workspace_mount_path" yaml:"vscodeWorkspaceMountPath"`
-		JupyterLabHostBaseDir         string `json:"jupyter_lab_host_base_dir" yaml:"jupyterLabHostBaseDir"`
 		OpenHydraNamespace            string `json:"open-hydra_namespace" yaml:"open-hydraNamespace"`
-		ImageRepo                     string `json:"image_repo" yaml:"imageRepo"`
-		VSCodeImageRepo               string `json:"vscode_image_repo" yaml:"vscodeImageRepo"`
 		// should be no default value but fill it in installation script, because it is a runtime value
 		// if not set we won't be able to start gpu pod at all
 		DefaultGpuDriver        string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
@@ -101,6 +96,8 @@ type (
 		CpuOverCommitRate       uint8               `json:"cpu_over_commit_rate" yaml:"cpuOverCommitRate"`
 		MemoryOverCommitRate    uint8               `json:"memory_over_commit_rate" yaml:"memoryOverCommitRate"`
 		AuthDelegateConfig      *AuthDelegateConfig `json:"auth_delegate_config" yaml:"authDelegateConfig,omitempty"`
+		MaximumPortsPerSandbox  uint8               `json:"maximum_ports_per_sandbox" yaml:"maximumPortsPerSandbox"`
+		WorkspacePath           string              `json:"workspace_path" yaml:"workspacePath"`
 	}
 )
 
@@ -123,24 +120,21 @@ func DefaultConfig() *OpenHydraServerConfig {
 		DefaultGpuPerDevice:           0,
 		PublicDatasetBasePath:         "/mnt/public-dataset",
 		PublicCourseBasePath:          "/mnt/public-course",
-		PublicVSCodeBasePath:          "/mnt/public-vscode",
 		PublicDatasetMaxSize:          1 << 30, // 1 GiB
 		PublicCourseMaxSize:           1 << 30, // 1 GiB
 		PublicDatasetVolumeType:       "hostpath",
 		PublicDatasetStudentMountPath: "/root/notebook/dataset-public",
 		PublicCourseStudentMountPath:  "/root/notebook/course-public",
-		VSCodeWorkspaceMountPath:      "/home/workspace",
 		MySqlConfig:                   DefaultMySqlConfig(),
 		EtcdConfig:                    DefaultEtcdConfig(),
 		OpenHydraNamespace:            defaultNamespace,
-		ImageRepo:                     "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-		VSCodeImageRepo:               "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
 		LeaderElection:                DefaultLeaderElection(),
 		DefaultGpuDriver:              "nvidia.com/gpu",
-		JupyterLabHostBaseDir:         "/mnt/jupyter-lab",
 		ServerIP:                      "localhost",
 		CpuOverCommitRate:             1, // no over commit for cpu by default,set to 2 cpu request will be divide by 2
 		MemoryOverCommitRate:          1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2
+		MaximumPortsPerSandbox:        3,
+		WorkspacePath:                 "/mnt/workspace",
 	}
 }
 

@@ -4,3 +4,4 @@ metadata:
   name: admin
 spec:
   openHydraUsername: admin
+  sandboxName: jupyter-lab

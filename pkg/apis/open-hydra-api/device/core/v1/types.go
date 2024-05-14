@@ -37,10 +37,7 @@ type DeviceSpec struct {
 	ChineseName       string `json:"chineseName,omitempty"`
 	LineNo            string `json:"lineNo,omitempty"`
 	UsePublicDataSet  bool   `json:"usePublicDataSet,omitempty"`
-	EasyTrainURL      string `json:"easyTrainUrl,omitempty"`
-	JupyterLabURL     string `json:"jupyterLabUrl,omitempty"`
-	IDEType           string `json:"ideType,omitempty"`
-	VSCodeURL         string `json:"vsCodeUrl,omitempty"`
+	SandboxURLs       string `json:"sandboxURLs,omitempty"`
 	SandboxName       string `json:"sandboxName,omitempty"`
 }
 

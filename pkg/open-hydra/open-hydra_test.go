@@ -14,6 +14,7 @@ import (
 	xDeviceV1 "open-hydra/pkg/apis/open-hydra-api/device/core/v1"
 	xUserV1 "open-hydra/pkg/apis/open-hydra-api/user/core/v1"
 	database "open-hydra/pkg/database"
+	"open-hydra/pkg/open-hydra/apis"
 	"open-hydra/pkg/open-hydra/k8s"
 	"open-hydra/pkg/util"
 	"os"
@@ -180,17 +181,6 @@ var _ = Describe("open-hydra-server handler test", func() {
 			Expect(result.MemoryLimit).To(Equal("10240Mi"))
 		})
 
-		It("get volume should be expected", func() {
-			volume := builder.BuildVolumes(*device)
-			Expect(volume[0].Name).To(Equal("jupyter-lab"))
-			Expect(volume[0].SourcePath).To(Equal(path.Join(openHydraConfig.JupyterLabHostBaseDir, device.Spec.OpenHydraUsername)))
-			Expect(volume[0].MountPath).To(Equal("/root/notebook"))
-			Expect(volume[1].ReadOnly).To(BeTrue())
-			Expect(volume[1].Name).To(Equal("public-dataset"))
-			Expect(volume[1].SourcePath).To(Equal(path.Join(openHydraConfig.PublicDatasetBasePath, device.Spec.OpenHydraUsername)))
-			Expect(volume[1].MountPath).To(Equal(openHydraConfig.PublicDatasetStudentMountPath))
-		})
-
 		It("get gpu should be set 0", func() {
 			gpu := builder.BuildGpu(*device)
 			Expect(gpu.GpuDriverName).To(Equal("test"))
@@ -212,9 +202,27 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 	var services []coreV1.Service
 	var users xUserV1.OpenHydraUserList
 	var openHydraConfig *config.OpenHydraServerConfig
+	var pluginList apis.PluginList
+	var volumeMounts []apis.VolumeMount
 	BeforeEach(func() {
 		openHydraConfig = config.DefaultConfig()
 		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
+		openHydraConfig.WorkspacePath = "/tmp/workspace"
+		pluginList = apis.PluginList{
+			Sandboxes: map[string]apis.Sandbox{
+				"jupyter-lab": apis.Sandbox{
+					GPUImageName: "test",
+					CPUImageName: "test",
+					Command:      []string{"test"},
+					Description:  "test",
+					DevelopmentInfo: []string{
+						"test-info1",
+						"test-info2",
+					},
+					Status: "running",
+				},
+			},
+		}
 		pods = []coreV1.Pod{
 			{
 				ObjectMeta: metaV1.ObjectMeta{
@@ -222,6 +230,7 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 					Labels: map[string]string{
 						k8s.OpenHydraWorkloadLabelKey: k8s.OpenHydraWorkloadLabelValue,
 						k8s.OpenHydraUserLabelKey:     "user1",
+						k8s.OpenHydraSandboxKey:       "jupyter-lab",
 					},
 				},
 				Spec: coreV1.PodSpec{
@@ -243,6 +252,7 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 					Labels: map[string]string{
 						k8s.OpenHydraWorkloadLabelKey: k8s.OpenHydraWorkloadLabelValue,
 						k8s.OpenHydraUserLabelKey:     "user2",
+						k8s.OpenHydraSandboxKey:       "vscode",
 					},
 				},
 				Spec: coreV1.PodSpec{
@@ -272,11 +282,11 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 				Spec: coreV1.ServiceSpec{
 					Ports: []coreV1.ServicePort{
 						{
-							Name:     "easy-train",
+							Name:     "port1",
 							NodePort: 5000,
 						},
 						{
-							Name:     "lab",
+							Name:     "port2",
 							NodePort: 8888,
 						},
 					},
@@ -293,11 +303,11 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 				Spec: coreV1.ServiceSpec{
 					Ports: []coreV1.ServicePort{
 						{
-							Name:     "easy-train",
+							Name:     "port1",
 							NodePort: 5000,
 						},
 						{
-							Name:     "lab",
+							Name:     "port2",
 							NodePort: 8888,
 						},
 					},
@@ -318,6 +328,23 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 				},
 			},
 		}
+		volumeMounts = []apis.VolumeMount{
+			{
+				Name:       "jupyter-lab",
+				MountPath:  "/root/notebook",
+				SourcePath: "{workspace}/jupyter-lab/{username}",
+			},
+			{
+				Name:       "public-dataset",
+				MountPath:  "/root/notebook/dataset-public",
+				SourcePath: "{dataset-public}",
+			},
+			{
+				Name:       "public-course",
+				MountPath:  "/root/notebook/course-public",
+				SourcePath: "{course-public}",
+			},
+		}
 	})
 
 	Describe("combineDeviceList result test", func() {
@@ -326,14 +353,14 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 			Expect(devices[0].Spec.DeviceCpu).To(Equal("2"))
 			Expect(devices[0].Spec.DeviceRam).To(Equal("8Gi"))
 			Expect(devices[0].Spec.DeviceGpu).To(Equal(uint8(0)))
-			Expect(devices[0].Spec.EasyTrainURL).To(Equal("http://localhost:5000"))
-			Expect(devices[0].Spec.JupyterLabURL).To(Equal("http://localhost:8888"))
+			Expect(devices[0].Spec.SandboxName).To(Equal("jupyter-lab"))
+			Expect(devices[0].Spec.SandboxURLs).To(Equal("http://localhost:5000,http://localhost:8888"))
 			Expect(devices[1].Spec.DeviceCpu).To(Equal("2"))
 			Expect(devices[1].Spec.DeviceRam).To(Equal("8Gi"))
 			Expect(devices[1].Spec.DeviceGpu).To(Equal(uint8(1)))
 			Expect(devices[1].Spec.GpuDriver).To(Equal("nvidia.com/gpu"))
-			Expect(devices[1].Spec.EasyTrainURL).To(Equal("http://localhost:5000"))
-			Expect(devices[1].Spec.JupyterLabURL).To(Equal("http://localhost:8888"))
+			Expect(devices[1].Spec.SandboxName).To(Equal("vscode"))
+			Expect(devices[0].Spec.SandboxURLs).To(Equal("http://localhost:5000,http://localhost:8888"))
 		})
 
 		It("should be container two address", func() {
@@ -343,8 +370,28 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 			result = combineUrl(openHydraConfig.ServerIP, 5000)
 			Expect(result).To(Equal("http://localhost:5000,http://10.0.0.10:5000"))
 		})
+	})
 
-		AfterEach(func() {
+	Describe("ParseJsonToPluginList result test", func() {
+		It("should be expected", func() {
+			jsonData, err := json.Marshal(pluginList)
+			Expect(err).To(BeNil())
+			result, err := ParseJsonToPluginList(string(jsonData))
+			Expect(err).To(BeNil())
+			Expect(result).To(Equal(pluginList))
+		})
+	})
+
+	Describe("preCreateUserDir result test", func() {
+		It("should be expected", func() {
+			err := preCreateUserDir(volumeMounts, "test", openHydraConfig)
+			Expect(err).To(BeNil())
+			_, err = os.Stat("/tmp/workspace/jupyter-lab/test")
+			Expect(err).To(BeNil())
+			Expect(volumeMounts[0].SourcePath).To(Equal("/tmp/workspace/jupyter-lab/test"))
+			Expect(volumeMounts[1].SourcePath).To(Equal("/mnt/public-dataset"))
+			Expect(volumeMounts[2].SourcePath).To(Equal("/mnt/public-course"))
+			os.RemoveAll("/tmp/workspace/jupyter-lab/test")
 		})
 	})
 })
@@ -358,7 +405,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 	var fakeDb *database.Faker
 	var container *restful.Container
 	var req *restful.Request
-	var device1, device2, device3 *xDeviceV1.Device
+	var device1, device2, device3, device4, device5, device6 *xDeviceV1.Device
 	var setting *xSetting.Setting
 	var openHydraUsersURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, OpenHydraUserPath)
 	var openHydraDevicesURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, DevicePath)
@@ -414,7 +461,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 
 		return defaultHeader
 	}
-	var createDevice = func(name string, gpu uint8) *xDeviceV1.Device {
+	var createDevice = func(name, sandboxName string, gpu uint8) *xDeviceV1.Device {
 		return &xDeviceV1.Device{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name: name,
@@ -422,6 +469,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Spec: xDeviceV1.DeviceSpec{
 				OpenHydraUsername: name,
 				DeviceGpu:         gpu,
+				SandboxName:       sandboxName,
 			},
 		}
 	}
@@ -531,11 +579,9 @@ var _ = Describe("open-hydra-server authorization test", func() {
 	}
 	BeforeEach(func() {
 		openHydraConfig = config.DefaultConfig()
-		openHydraConfig.JupyterLabHostBaseDir = "/tmp/jupyter-lab"
 		openHydraConfig.PublicDatasetBasePath = "/tmp/public-dataset"
 		openHydraConfig.PublicCourseBasePath = "/tmp/public-course"
-		openHydraConfig.PublicVSCodeBasePath = "/tmp/public-vscode"
-		util.CreateDirIfNotExists(openHydraConfig.JupyterLabHostBaseDir)
+		openHydraConfig.WorkspacePath = "/tmp/workspace"
 		util.CreateDirIfNotExists(openHydraConfig.PublicDatasetBasePath)
 		util.CreateDirIfNotExists(openHydraConfig.PublicCourseBasePath)
 		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
@@ -543,9 +589,12 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		student = createFakeUser("student", "student", 2)
 		newTeacher = createFakeUser("newTeacher", "newTeacher", 1)
 		newStudent = createFakeUser("newStudent", "newStudent", 2)
-		device1 = createDevice("teacher", 1)
-		device2 = createDevice("student", 0)
-		device3 = createDevice("student", 1)
+		device1 = createDevice("teacher", "jupyter-lab", 1)
+		device2 = createDevice("student", "jupyter-lab", 0)
+		device3 = createDevice("student", "jupyter-lab", 1)
+		device4 = createDevice("student", "", 1)
+		device5 = createDevice("student", "jupyter-lab-lot-ports", 0)
+		device6 = createDevice("student", "jupyter-lab-no-ports", 0)
 		setting = &xSetting.Setting{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name: "default",
@@ -695,6 +744,28 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target.Spec.OpenHydraUsername).To(Equal("student"))
 		})
 
+		It("open-hydra device should be rejected as expected", func() {
+			// exceed port limit should be denied
+			body3, err := json.Marshal(device5)
+			Expect(err).To(BeNil())
+			_, r2 := callApi(http.MethodPost, openHydraDevicesURL, createTokenValue(student, nil), bytes.NewReader(body3))
+			Expect(r2.Code).To(Equal(http.StatusBadRequest))
+
+			// no port defined should be denied
+			body4, err := json.Marshal(device6)
+			Expect(err).To(BeNil())
+			_, r2 = callApi(http.MethodPost, openHydraDevicesURL, createTokenValue(student, nil), bytes.NewReader(body4))
+			Expect(r2.Code).To(Equal(http.StatusBadRequest))
+
+		})
+
+		It("open-hydra device create should be rejected due to no sandbox name is set", func() {
+			body1, err := json.Marshal(device4)
+			Expect(err).To(BeNil())
+			_, r2 := callApi(http.MethodPost, openHydraDevicesURL, createTokenValue(teacher, nil), bytes.NewReader(body1))
+			Expect(r2.Code).To(Equal(http.StatusBadRequest))
+		})
+
 		It("open-hydra device create should be deny because student do not have right to create device for others", func() {
 			body, err := json.Marshal(device1)
 			Expect(err).To(BeNil())
@@ -754,8 +825,13 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			err = json.Unmarshal(result, &target)
 			Expect(err).To(BeNil())
 			Expect(target.Spec.DefaultGpuPerDevice).To(Equal(uint8(0)))
-			Expect(len(target.Spec.PluginList.Sandboxes)).To(Equal(1))
+			Expect(len(target.Spec.PluginList.Sandboxes)).To(Equal(4))
 			Expect(target.Spec.PluginList.Sandboxes["test"].CPUImageName).To(Equal("test"))
+			Expect(target.Spec.PluginList.Sandboxes["test"].Ports[0]).To(Equal(uint16(8888)))
+			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].Name).To(Equal("jupyter-lab"))
+			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].MountPath).To(Equal("/root/notebook"))
+			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].GPUImageName).To(Equal("jupyter-lab-test"))
+			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab-lot-ports"].GPUImageName).To(Equal("jupyter-lab-test"))
 		})
 
 		It("open-hydra update setting by teacher should be ok", func() {

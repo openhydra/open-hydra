@@ -1,22 +1,24 @@
 package openhydra
 
 import (
+	"encoding/json"
 	stdErr "errors"
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"open-hydra/cmd/open-hydra-server/app/config"
+	xDeviceV1 "open-hydra/pkg/apis/open-hydra-api/device/core/v1"
+	xUserV1 "open-hydra/pkg/apis/open-hydra-api/user/core/v1"
+	"open-hydra/pkg/open-hydra/apis"
+	"open-hydra/pkg/open-hydra/k8s"
+	"open-hydra/pkg/util"
 
 	"github.com/emicklei/go-restful/v3"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"open-hydra/cmd/open-hydra-server/app/config"
-	xDeviceV1 "open-hydra/pkg/apis/open-hydra-api/device/core/v1"
-	xUserV1 "open-hydra/pkg/apis/open-hydra-api/user/core/v1"
-	"open-hydra/pkg/open-hydra/k8s"
-	"open-hydra/pkg/util"
 )
 
 type HttpErrMsg struct {
@@ -71,7 +73,6 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 		device.Namespace = user.Namespace
 		device.Spec.Role = user.Spec.Role
 		device.Spec.ChineseName = user.Spec.ChineseName
-		device.Spec.IDEType = k8s.OpenHydraIDELabelUnset
 		if _, found := podFlat[user.Name]; found {
 			// only fill up device if we found a pod
 			device.Spec.DeviceCpu = podFlat[user.Name].Spec.Containers[0].Resources.Requests.Cpu().String()
@@ -94,19 +95,17 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 			if podFlat[user.Name].DeletionTimestamp != nil {
 				device.Spec.DeviceStatus = "Terminating"
 			}
-			if _, found := podFlat[user.Name].Labels[k8s.OpenHydraIDELabelKey]; found {
-				device.Spec.IDEType = podFlat[user.Name].Labels[k8s.OpenHydraIDELabelKey]
+			if _, found := podFlat[user.Name].Labels[k8s.OpenHydraSandboxKey]; found {
+				device.Spec.SandboxName = podFlat[user.Name].Labels[k8s.OpenHydraSandboxKey]
 			}
 		}
 
 		if _, found := serviceFlat[user.Name]; found {
-			if podFlat[user.Name].Labels[k8s.OpenHydraIDELabelKey] == k8s.OpenHydraIDELabelVSCode {
-				device.Spec.VSCodeURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
-			} else {
-				device.Spec.EasyTrainURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[0].NodePort)
-				device.Spec.JupyterLabURL = combineUrl(config.ServerIP, serviceFlat[user.Name].Spec.Ports[1].NodePort)
+			var portURLs []string
+			for _, port := range serviceFlat[user.Name].Spec.Ports {
+				portURLs = append(portURLs, combineUrl(config.ServerIP, port.NodePort))
 			}
-
+			device.Spec.SandboxURLs = strings.Join(portURLs, ",")
 		}
 		result = append(result, device)
 	}
@@ -123,4 +122,39 @@ func combineUrl(serverAddress string, port int32) string {
 		result = append(result, fmt.Sprintf("http://%s:%d", address, port))
 	}
 	return strings.Join(result, ",")
+}
+
+func ParseJsonToPluginList(jsonData string) (apis.PluginList, error) {
+	var plugins apis.PluginList
+	err := json.Unmarshal([]byte(jsonData), &plugins)
+	if err != nil {
+		return plugins, err
+	}
+	return plugins, nil
+}
+
+func preCreateUserDir(volumesMounts []apis.VolumeMount, username string, config *config.OpenHydraServerConfig) error {
+	for index, volumeMount := range volumesMounts {
+		dirToCreate := volumeMount.SourcePath
+		if strings.Contains(volumeMount.SourcePath, "{username}") || strings.Contains(volumeMount.SourcePath, "{workspace}") {
+			// only private dir needs to be create on pod booting
+			dirToCreate = strings.Replace(dirToCreate, "{username}", username, -1)
+			dirToCreate = strings.Replace(dirToCreate, "{workspace}", config.WorkspacePath, -1)
+			err := util.CreateDirIfNotExists(dirToCreate)
+			if err != nil {
+				return err
+			}
+			volumesMounts[index].SourcePath = dirToCreate
+			continue
+		}
+		if strings.Contains(volumeMount.SourcePath, "{dataset-public}") {
+			dirToCreate = strings.Replace(dirToCreate, "{dataset-public}", config.PublicDatasetBasePath, -1)
+		}
+		if strings.Contains(volumeMount.SourcePath, "{course-public}") {
+			dirToCreate = strings.Replace(dirToCreate, "{course-public}", config.PublicCourseBasePath, -1)
+		}
+
+		volumesMounts[index].SourcePath = dirToCreate
+	}
+	return nil
 }

@@ -16,8 +16,8 @@ type IOpenHydraK8sHelper interface {
 	ListDeployment(namespace string, client *kubernetes.Clientset) ([]appsV1.Deployment, error)
 	ListService(namespace string, client *kubernetes.Clientset) ([]coreV1.Service, error)
 	DeleteUserDeployment(label, namespace string, client *kubernetes.Clientset) error
-	CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error
-	CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset) error
+	CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int) error
+	CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset, ports map[string]int) error
 	DeleteUserService(label, namespace string, client *kubernetes.Clientset) error
 	GetUserService(label, namespace string, client *kubernetes.Clientset) (*coreV1.Service, error)
 	DeleteUserReplicaSet(label, namespace string, client *kubernetes.Clientset) error

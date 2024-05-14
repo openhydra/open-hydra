@@ -9,7 +9,6 @@ import (
 	envApi "open-hydra/pkg/open-hydra/apis"
 	"open-hydra/pkg/open-hydra/k8s"
 	"open-hydra/pkg/util"
-	"path"
 	"strconv"
 
 	"github.com/emicklei/go-restful/v3"
@@ -147,6 +146,11 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
+	if reqDevice.Spec.SandboxName == "" {
+		writeHttpResponseAndLogError(response, http.StatusBadRequest, "SandboxName is empty")
+		return
+	}
+
 	if !builder.Config.DisableAuth {
 		reqUser := request.HeaderParameter(openHydraHeaderUser)
 		reqRole := request.HeaderParameter(openHydraHeaderRole)
@@ -188,34 +192,83 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	// create a dir on host for jupyter lab for this user if it does not exist
-	err = util.CreateDirIfNotExists(path.Join(builder.Config.JupyterLabHostBaseDir, reqDevice.Spec.OpenHydraUsername))
-	if err != nil {
-		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// create a dir on host for vscode for this user if it does not exist
-	err = util.CreateDirIfNotExists(path.Join(builder.Config.PublicVSCodeBasePath, reqDevice.Spec.OpenHydraUsername))
-	if err != nil {
-		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	gpuSet := builder.BuildGpu(reqDevice)
 
-	image := builder.Config.ImageRepo
-	if reqDevice.Spec.IDEType == k8s.OpenHydraIDELabelVSCode {
-		image = builder.Config.VSCodeImageRepo
+	// we need to get config map openhydra-plugin first
+	// TODO: we should use informer to cache config map instead of query api-server directly for performance
+	pluginConfigMap, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
+		return
 	}
 
-	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.IDEType, builder.BuildVolumes(reqDevice), gpuSet, builder.kubeClient)
+	// parse to plugin list
+	plugins, err := ParseJsonToPluginList(pluginConfigMap.Data["plugins"])
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal json: %v", err))
+		return
+	}
+
+	var image string
+	var ports map[string]int
+	var command, args []string
+	var volumeMounts []envApi.VolumeMount
+	if _, found := plugins.Sandboxes[reqDevice.Spec.SandboxName]; !found {
+		// if sandbox name did not match any sandbox name then return error
+		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("sandbox %s not found, please ensure sandbox is proper config", reqDevice.Spec.SandboxName))
+		return
+	} else {
+		if len(plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports) > int(builder.Config.MaximumPortsPerSandbox) {
+			// if sandbox exceed maximum ports limit then return error
+			writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("sandbox %s exceed maximum ports limit", reqDevice.Spec.SandboxName))
+			return
+		}
+		// TODO: we need consider security issue for certain volume mount
+		volumeMounts = plugins.Sandboxes[reqDevice.Spec.SandboxName].VolumeMounts
+		// handle private dir creation
+		err = preCreateUserDir(volumeMounts, reqDevice.Spec.OpenHydraUsername, builder.Config)
+		if err != nil {
+			writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to create user dir: %v", err))
+			return
+		}
+		command = plugins.Sandboxes[reqDevice.Spec.SandboxName].Command
+		args = plugins.Sandboxes[reqDevice.Spec.SandboxName].Args
+		ports = make(map[string]int)
+		for index, port := range plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports {
+			name := fmt.Sprintf("port-%d", index)
+			ports[name] = int(port)
+		}
+		// set image with different hardware type if match
+		if gpuSet.Gpu > 0 {
+			// go with gpu image
+			image = plugins.Sandboxes[reqDevice.Spec.SandboxName].GPUImageName
+			slog.Debug(fmt.Sprintf("set image to gpu image '%s'", image))
+		} else {
+			// go with cpu image
+			image = plugins.Sandboxes[reqDevice.Spec.SandboxName].CPUImageName
+			slog.Debug(fmt.Sprintf("set image to cpu image '%s'", image))
+		}
+	}
+
+	// if image is empty then return error
+	if image == "" {
+		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("no image found for sandbox %s", reqDevice.Spec.SandboxName))
+		return
+	}
+
+	// if no ports found then return error
+	if len(ports) == 0 {
+		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("no ports found for sandbox %s", reqDevice.Spec.SandboxName))
+		return
+	}
+
+	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, volumeMounts, gpuSet, builder.kubeClient, command, args, ports)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = builder.k8sHelper.CreateService(builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.IDEType, builder.kubeClient)
+	err = builder.k8sHelper.CreateService(builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, builder.kubeClient, ports)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
@@ -379,41 +432,6 @@ func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Devic
 		MemoryRequest: memoryReq,
 		MemoryLimit:   memoryLimit,
 	}
-}
-
-func (builder *OpenHydraRouteBuilder) BuildVolumes(postDevice xDeviceV1.Device) []envApi.VolumeMount {
-	result := []envApi.VolumeMount{
-		{
-			Name:       "jupyter-lab",
-			MountPath:  "/root/notebook", // so far image use /root/notebook as default path
-			SourcePath: path.Join(builder.Config.JupyterLabHostBaseDir, postDevice.Spec.OpenHydraUsername),
-		},
-		{
-			Name:      "public-dataset",
-			MountPath: builder.Config.PublicDatasetStudentMountPath,
-			// no bidirectional here so vfs will copy file from host to container, so no file concurrency issue here
-			SourcePath: builder.Config.PublicDatasetBasePath,
-			ReadOnly:   true,
-		},
-		{
-			Name:      "public-course",
-			MountPath: builder.Config.PublicCourseStudentMountPath,
-			// no bidirectional here so vfs will copy file from host to container, so no file concurrency issue here
-			SourcePath: builder.Config.PublicCourseBasePath,
-			ReadOnly:   true,
-		},
-	}
-
-	// if device is vscode device mount vscode workspace
-	if postDevice.Spec.IDEType == k8s.OpenHydraIDELabelVSCode {
-		result = append(result, envApi.VolumeMount{
-			Name:       "public-vscode",
-			MountPath:  builder.Config.VSCodeWorkspaceMountPath,
-			SourcePath: path.Join(builder.Config.PublicVSCodeBasePath, postDevice.Spec.OpenHydraUsername),
-		})
-	}
-
-	return result
 }
 
 func (builder *OpenHydraRouteBuilder) BuildGpu(postDevice xDeviceV1.Device) envApi.GpuSet {

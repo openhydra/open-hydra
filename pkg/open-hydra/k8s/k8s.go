@@ -24,6 +24,7 @@ const (
 	OpenHydraIDELabelJuptyerLab  = "jupyterlab"
 	OpenHydraIDELabelVSCode      = "vscode"
 	OpenHydraIDELabelUnset       = "unset"
+	OpenHydraSandboxKey          = "openhydra-sandbox"
 )
 
 type DefaultHelper struct {
@@ -129,7 +130,7 @@ func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client 
 	return nil
 }
 
-func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, ideType string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset) error {
+func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int) error {
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
@@ -137,9 +138,6 @@ func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, na
 	replicas := int32(1)
 	resourceReq, resourceLim := createResource(cpuMemorySet, gpuSet)
 	ideTypeLabelValue := OpenHydraIDELabelUnset
-	if ideType != "" {
-		ideTypeLabelValue = ideType
-	}
 	deployment := &appsV1.Deployment{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      baseName,
@@ -148,6 +146,7 @@ func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, na
 				OpenHydraUserLabelKey:     studentID,
 				OpenHydraWorkloadLabelKey: OpenHydraWorkloadLabelValue,
 				OpenHydraIDELabelKey:      ideTypeLabelValue,
+				OpenHydraSandboxKey:       sandboxName,
 			},
 		},
 		Spec: appsV1.DeploymentSpec{
@@ -167,7 +166,7 @@ func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, na
 				},
 				Spec: coreV1.PodSpec{
 					Volumes:    createVolume(volumes),
-					Containers: createContainers(baseName, image, volumes, resourceReq, resourceLim),
+					Containers: createContainers(baseName, image, volumes, resourceReq, resourceLim, command, args, ports),
 				},
 			},
 		},
@@ -197,26 +196,33 @@ func createResource(cpuMemorySet CpuMemorySet, gpuSet apis.GpuSet) (coreV1.Resou
 	return resourceReq, resourceLim
 }
 
-func createContainers(baseName, image string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList) []coreV1.Container {
+func createContainers(baseName, image string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList, command, args []string, ports map[string]int) []coreV1.Container {
 	container := coreV1.Container{
 		Name:            baseName + "-container",
 		Image:           image,
 		ImagePullPolicy: coreV1.PullPolicy("IfNotPresent"),
-		Ports: []coreV1.ContainerPort{
-			{
-				ContainerPort: 5000,
-				Protocol:      coreV1.ProtocolTCP,
-			},
-			{
-				ContainerPort: 8888,
-				Protocol:      coreV1.ProtocolTCP,
-			},
-		},
-
 		Resources: coreV1.ResourceRequirements{
 			Limits:   resourceLimit,
 			Requests: resourceReq,
 		},
+	}
+
+	var portsExported []coreV1.ContainerPort
+	for name, port := range ports {
+		portsExported = append(portsExported, coreV1.ContainerPort{
+			Name:          name,
+			ContainerPort: int32(port),
+		})
+	}
+
+	container.Ports = portsExported
+
+	if len(command) > 0 {
+		container.Command = command
+	}
+
+	if len(args) > 0 {
+		container.Args = args
 	}
 
 	for _, volume := range volumes {
@@ -249,25 +255,16 @@ func createVolume(volumes []apis.VolumeMount) []coreV1.Volume {
 	return volumeMounts
 }
 
-func (help *DefaultHelper) CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset) error {
-	ports := []coreV1.ServicePort{
-		{
-			Name: "easy-train",
-			Port: 5000,
-		},
-		{
-			Name: "lab",
-			Port: 8888,
-		},
+func (help *DefaultHelper) CreateService(namespace, studentID, ideType string, client *kubernetes.Clientset, ports map[string]int) error {
+
+	var portsExported []coreV1.ServicePort
+	for name, port := range ports {
+		portsExported = append(portsExported, coreV1.ServicePort{
+			Name: name,
+			Port: int32(port),
+		})
 	}
-	if ideType == OpenHydraIDELabelVSCode {
-		ports = []coreV1.ServicePort{
-			{
-				Name: "vscode",
-				Port: 3000,
-			},
-		}
-	}
+
 	service := &coreV1.Service{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      fmt.Sprintf(OpenHydraServiceNameTemplate, studentID),
@@ -282,7 +279,7 @@ func (help *DefaultHelper) CreateService(namespace, studentID, ideType string, c
 			Selector: map[string]string{
 				OpenHydraUserLabelKey: studentID,
 			},
-			Ports: ports,
+			Ports: portsExported,
 		},
 	}
 
