@@ -162,6 +162,7 @@ func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, na
 						OpenHydraUserLabelKey:     studentID,
 						OpenHydraWorkloadLabelKey: OpenHydraWorkloadLabelValue,
 						OpenHydraIDELabelKey:      ideTypeLabelValue,
+						OpenHydraSandboxKey:       sandboxName,
 					},
 				},
 				Spec: coreV1.PodSpec{
