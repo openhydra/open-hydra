@@ -74,6 +74,15 @@ root@kind-control-plane:/# cd && apt update && apt install -y git
 # 下载 open-hydra 项目
 root@kind-control-plane:# git clone https://github.com/openhydra/open-hydra.git
 
+# 部署 local-path
+root@kind-control-plane:# mkdir /opt/local-path-provisioner
+root@kind-control-plane:# kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+# 检查结果
+root@kind-control-plane:# kubectl get pods -n local-path-storage
+# 输出
+NAME                                      READY   STATUS    RESTARTS   AGE
+local-path-provisioner-58b65c8d5d-mntd2   1/1     Running   0          3m4s
+
 # 部署 mysql-operator
 root@kind-control-plane:# cd open-hydra
 root@kind-control-plane:# kubectl apply -f deploy/mysql-operator-crds.yaml
@@ -85,6 +94,7 @@ mysql-operator-754799c79b-r4gv8   1/1     Running   0          99s
 # 部署 mysql 实例
 root@kind-control-plane:# kubectl apply -f deploy/mysql-instance.yaml
 # 等待几分钟，直到 mysql 实例运行，取决于您的网配置可能需要3到10分钟左右
+# 目前看到有特定几率 mycluster-0 会长时间卡在 init 2/3 状态大家请耐心等待下
 root@kind-control-plane:# kubectl get pods -n mysql-operator
 # 输出，一个实例会有一个 router 出现
 NAME                                READY   STATUS    RESTARTS   AGE
