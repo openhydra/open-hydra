@@ -9,7 +9,6 @@ import (
 var version string
 
 func main() {
-	// add a comment for ci test
 	cmd := app.NewCommand(version)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)

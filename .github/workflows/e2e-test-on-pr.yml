@@ -5,7 +5,7 @@ name: E2e-test
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release-0.1"]
     paths:
       - "**.go"
 
