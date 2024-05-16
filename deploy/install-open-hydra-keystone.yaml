@@ -255,7 +255,7 @@ data:
                 ]
             },
             "keras": {
-                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
                 "command": [],
                 "args": [],
