@@ -176,6 +176,7 @@ data:
             "jupyter-lab": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "icon_name": "jupyter-lab.png",
                 "command": [],
                 "args": [],
                 "description": "jupyter lab 是在线的 python 开发环境",
@@ -198,18 +199,21 @@ data:
                     {
                         "name": "public-dataset",
                         "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}"
+                        "source_path": "{dataset-public}",
+                        "read_only": true
                     },
                     {
                         "name": "public-course",
                         "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}"
+                        "source_path": "{course-public}",
+                        "read_only": true
                     }
                 ]
             },
             "vscode": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
+                "icon_name": "vscode.png",
                 "command": [],
                 "args": [],
                 "description": "vscode 是在线的代码编辑器,并可以自行编辑代码和安装各种开发环境",
@@ -228,18 +232,21 @@ data:
                     {
                         "name": "public-dataset",
                         "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}"
+                        "source_path": "{dataset-public}",
+                        "read_only": true
                     },
                     {
                         "name": "public-course",
                         "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}"
+                        "source_path": "{course-public}",
+                        "read_only": true
                     }
                 ]
             },
             "keras": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "icon_name": "keras.png",
                 "command": [],
                 "args": [],
                 "description": "keras 是在线的深度学习开发环境",
@@ -261,18 +268,21 @@ data:
                     {
                         "name": "public-dataset",
                         "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}"
+                        "source_path": "{dataset-public}",
+                        "read_only": true
                     },
                     {
                         "name": "public-course",
                         "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}"
+                        "source_path": "{course-public}",
+                        "read_only": true
                     }
                 ]
             },
             "PaddlePaddle": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                "icon_name": "PaddlePaddle.png",
                 "command": [],
                 "args": [],
                 "description": "PaddlePaddle 是在线的深度学习开发环境",
@@ -294,12 +304,14 @@ data:
                     {
                         "name": "public-dataset",
                         "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}"
+                        "source_path": "{dataset-public}",
+                        "read_only": true
                     },
                     {
                         "name": "public-course",
                         "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}"
+                        "source_path": "{course-public}",
+                        "read_only": true
                     }
                 ]
             }

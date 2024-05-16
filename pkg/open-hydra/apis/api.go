@@ -24,6 +24,7 @@ type Sandbox struct {
 	Status          string        `json:"status,omitempty"`
 	Ports           []uint16      `json:"ports,omitempty"`
 	VolumeMounts    []VolumeMount `json:"volume_mounts,omitempty"`
+	IconName        string        `json:"icon_name,omitempty"`
 	// TODO: more deployment properties here such as env, resources, etc.
 }
 

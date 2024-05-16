@@ -16274,6 +16274,12 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"icon_name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
