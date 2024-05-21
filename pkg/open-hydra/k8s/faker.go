@@ -122,6 +122,7 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				"test": {
 					"cpuImageName": "test",
 					"gpuImageName": "test",
+					"icon_name": "test1.png",
 					"command": ["test"],
 					"description": "test",
 					"developmentInfo": ["test"],
@@ -150,6 +151,7 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				"jupyter-lab": {
 					"cpuImageName": "jupyter-lab-test",
 					"gpuImageName": "jupyter-lab-test",
+					"icon_name": "test2.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
 					"developmentInfo": ["jupyter-lab-test"],
@@ -178,6 +180,7 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				"jupyter-lab-lot-ports": {
 					"cpuImageName": "jupyter-lab-test",
 					"gpuImageName": "jupyter-lab-test",
+					"icon_name": "test3.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
 					"developmentInfo": ["jupyter-lab-test"],
@@ -209,6 +212,7 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				"jupyter-lab-not-ports": {
 					"cpuImageName": "jupyter-lab-test",
 					"gpuImageName": "jupyter-lab-test",
+					"icon_name": "test4.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
 					"developmentInfo": ["jupyter-lab-test"],

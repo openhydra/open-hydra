@@ -828,9 +828,11 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(len(target.Spec.PluginList.Sandboxes)).To(Equal(4))
 			Expect(target.Spec.PluginList.Sandboxes["test"].CPUImageName).To(Equal("test"))
 			Expect(target.Spec.PluginList.Sandboxes["test"].Ports[0]).To(Equal(uint16(8888)))
+			Expect(target.Spec.PluginList.Sandboxes["test"].IconName).To(Equal("test1.png"))
 			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].Name).To(Equal("jupyter-lab"))
 			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].MountPath).To(Equal("/root/notebook"))
 			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].GPUImageName).To(Equal("jupyter-lab-test"))
+			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].IconName).To(Equal("test2.png"))
 			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab-lot-ports"].GPUImageName).To(Equal("jupyter-lab-test"))
 		})
 
