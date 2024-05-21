@@ -252,6 +252,7 @@ mycluster-router-5d74f97d5b-plpp5   1/1     Running   0          1m
 mysql-operator-66bfb7f6df-82zcn     1/1     Running   0          5m
 
 # 部署 open-hydra
+$ kubectl create ns open-hydra
 $ kubectl apply -f deploy/install-open-hydra.yaml
 # 等待片刻后，检查 open-hydra 已经运行了
 $ kubectl get pods -n open-hydra
