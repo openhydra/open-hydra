@@ -203,7 +203,7 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 	var users xUserV1.OpenHydraUserList
 	var openHydraConfig *config.OpenHydraServerConfig
 	var pluginList apis.PluginList
-	var volumeMounts []apis.VolumeMount
+	var volumes []apis.Volume
 	BeforeEach(func() {
 		openHydraConfig = config.DefaultConfig()
 		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
@@ -328,21 +328,25 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 				},
 			},
 		}
-		volumeMounts = []apis.VolumeMount{
+		volumes = []apis.Volume{
 			{
-				Name:       "jupyter-lab",
-				MountPath:  "/root/notebook",
-				SourcePath: "{workspace}/jupyter-lab/{username}",
+				HostPath: &apis.HostPath{
+					Path: "{workspace}/jupyter-lab/{username}",
+					Name: "jupyter-lab",
+				},
 			},
 			{
-				Name:       "public-dataset",
-				MountPath:  "/root/notebook/dataset-public",
-				SourcePath: "{dataset-public}",
+				HostPath: &apis.HostPath{
+					Path: "{workspace}/vscode/{username}",
+					Name: "jupyter-lab2",
+				},
 			},
 			{
-				Name:       "public-course",
-				MountPath:  "/root/notebook/course-public",
-				SourcePath: "{course-public}",
+				EmptyDir: &apis.EmptyDir{
+					Medium:    "test",
+					SizeLimit: 1024,
+					Name:      "empty-dir",
+				},
 			},
 		}
 	})
@@ -384,14 +388,16 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 
 	Describe("preCreateUserDir result test", func() {
 		It("should be expected", func() {
-			err := preCreateUserDir(volumeMounts, "test", openHydraConfig)
+			err := preCreateUserDir(volumes, "test", openHydraConfig)
 			Expect(err).To(BeNil())
 			_, err = os.Stat("/tmp/workspace/jupyter-lab/test")
 			Expect(err).To(BeNil())
-			Expect(volumeMounts[0].SourcePath).To(Equal("/tmp/workspace/jupyter-lab/test"))
-			Expect(volumeMounts[1].SourcePath).To(Equal("/mnt/public-dataset"))
-			Expect(volumeMounts[2].SourcePath).To(Equal("/mnt/public-course"))
+			_, err = os.Stat("/tmp/workspace/vscode/test")
+			Expect(err).To(BeNil())
+			Expect(volumes[0].HostPath.Path).To(Equal("/tmp/workspace/jupyter-lab/test"))
+			Expect(volumes[1].HostPath.Path).To(Equal("/tmp/workspace/vscode/test"))
 			os.RemoveAll("/tmp/workspace/jupyter-lab/test")
+			os.RemoveAll("/tmp/workspace/vscode/test")
 		})
 	})
 })

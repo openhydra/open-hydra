@@ -133,10 +133,13 @@ func ParseJsonToPluginList(jsonData string) (apis.PluginList, error) {
 	return plugins, nil
 }
 
-func preCreateUserDir(volumesMounts []apis.VolumeMount, username string, config *config.OpenHydraServerConfig) error {
-	for index, volumeMount := range volumesMounts {
-		dirToCreate := volumeMount.SourcePath
-		if strings.Contains(volumeMount.SourcePath, "{username}") || strings.Contains(volumeMount.SourcePath, "{workspace}") {
+func preCreateUserDir(volumes []apis.Volume, username string, config *config.OpenHydraServerConfig) error {
+	for index, volume := range volumes {
+		if volume.HostPath == nil {
+			continue
+		}
+		dirToCreate := volume.HostPath.Path
+		if strings.Contains(volume.HostPath.Path, "{username}") || strings.Contains(volume.HostPath.Path, "{workspace}") {
 			// only private dir needs to be create on pod booting
 			dirToCreate = strings.Replace(dirToCreate, "{username}", username, -1)
 			dirToCreate = strings.Replace(dirToCreate, "{workspace}", config.WorkspacePath, -1)
@@ -144,17 +147,17 @@ func preCreateUserDir(volumesMounts []apis.VolumeMount, username string, config 
 			if err != nil {
 				return err
 			}
-			volumesMounts[index].SourcePath = dirToCreate
+			volumes[index].HostPath.Path = dirToCreate
 			continue
 		}
-		if strings.Contains(volumeMount.SourcePath, "{dataset-public}") {
+		if strings.Contains(volume.HostPath.Path, "{dataset-public}") {
 			dirToCreate = strings.Replace(dirToCreate, "{dataset-public}", config.PublicDatasetBasePath, -1)
 		}
-		if strings.Contains(volumeMount.SourcePath, "{course-public}") {
+		if strings.Contains(volume.HostPath.Path, "{course-public}") {
 			dirToCreate = strings.Replace(dirToCreate, "{course-public}", config.PublicCourseBasePath, -1)
 		}
 
-		volumesMounts[index].SourcePath = dirToCreate
+		volumes[index].HostPath.Path = dirToCreate
 	}
 	return nil
 }

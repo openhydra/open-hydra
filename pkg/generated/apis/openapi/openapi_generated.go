@@ -331,8 +331,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserList":   schema_open_hydra_api_user_core_v1_OpenHydraUserList(ref),
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserSpec":   schema_open_hydra_api_user_core_v1_OpenHydraUserSpec(ref),
 		"open-hydra/pkg/apis/open-hydra-api/user/core/v1.OpenHydraUserStatus": schema_open_hydra_api_user_core_v1_OpenHydraUserStatus(ref),
+		"open-hydra/pkg/open-hydra/apis.EmptyDir":                             schema_open_hydra_pkg_open_hydra_apis_EmptyDir(ref),
+		"open-hydra/pkg/open-hydra/apis.HostPath":                             schema_open_hydra_pkg_open_hydra_apis_HostPath(ref),
 		"open-hydra/pkg/open-hydra/apis.PluginList":                           schema_open_hydra_pkg_open_hydra_apis_PluginList(ref),
 		"open-hydra/pkg/open-hydra/apis.Sandbox":                              schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref),
+		"open-hydra/pkg/open-hydra/apis.Volume":                               schema_open_hydra_pkg_open_hydra_apis_Volume(ref),
 		"open-hydra/pkg/open-hydra/apis.VolumeMount":                          schema_open_hydra_pkg_open_hydra_apis_VolumeMount(ref),
 	}
 }
@@ -16146,6 +16149,74 @@ func schema_open_hydra_api_user_core_v1_OpenHydraUserStatus(ref common.Reference
 	}
 }
 
+func schema_open_hydra_pkg_open_hydra_apis_EmptyDir(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"medium": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"size_limit": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"medium", "size_limit", "name"},
+			},
+		},
+	}
+}
+
+func schema_open_hydra_pkg_open_hydra_apis_HostPath(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"name", "path", "type"},
+			},
+		},
+	}
+}
+
 func schema_open_hydra_pkg_open_hydra_apis_PluginList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -16274,6 +16345,19 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"volumes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("open-hydra/pkg/open-hydra/apis.Volume"),
+									},
+								},
+							},
+						},
+					},
 					"icon_name": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -16284,7 +16368,31 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"open-hydra/pkg/open-hydra/apis.VolumeMount"},
+			"open-hydra/pkg/open-hydra/apis.Volume", "open-hydra/pkg/open-hydra/apis.VolumeMount"},
+	}
+}
+
+func schema_open_hydra_pkg_open_hydra_apis_Volume(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"empty_dir": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("open-hydra/pkg/open-hydra/apis.EmptyDir"),
+						},
+					},
+					"host_path": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("open-hydra/pkg/open-hydra/apis.HostPath"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"open-hydra/pkg/open-hydra/apis.EmptyDir", "open-hydra/pkg/open-hydra/apis.HostPath"},
 	}
 }
 

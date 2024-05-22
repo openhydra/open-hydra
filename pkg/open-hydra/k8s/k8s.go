@@ -130,7 +130,7 @@ func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client 
 	return nil
 }
 
-func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumes []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int) error {
+func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumeMounts []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int, volumes []apis.Volume) error {
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
@@ -167,7 +167,7 @@ func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, na
 				},
 				Spec: coreV1.PodSpec{
 					Volumes:    createVolume(volumes),
-					Containers: createContainers(baseName, image, volumes, resourceReq, resourceLim, command, args, ports),
+					Containers: createContainers(baseName, image, volumeMounts, resourceReq, resourceLim, command, args, ports),
 				},
 			},
 		},
@@ -239,20 +239,36 @@ func createContainers(baseName, image string, volumes []apis.VolumeMount, resour
 	}
 }
 
-func createVolume(volumes []apis.VolumeMount) []coreV1.Volume {
+func createVolume(volumes []apis.Volume) []coreV1.Volume {
+	// Todo: also move host path to volume
 	var volumeMounts []coreV1.Volume
-	hpType := coreV1.HostPathDirectoryOrCreate
+
 	for _, volume := range volumes {
-		volumeMounts = append(volumeMounts, coreV1.Volume{
-			Name: volume.Name,
-			VolumeSource: coreV1.VolumeSource{
-				HostPath: &coreV1.HostPathVolumeSource{
-					Path: volume.SourcePath,
-					Type: &hpType,
+		if volume.EmptyDir != nil {
+			sizeLimit := resource.MustParse(fmt.Sprintf("%dMi", volume.EmptyDir.SizeLimit))
+			volumeMounts = append(volumeMounts, coreV1.Volume{
+				Name: volume.EmptyDir.Name,
+				VolumeSource: coreV1.VolumeSource{
+					EmptyDir: &coreV1.EmptyDirVolumeSource{
+						Medium:    coreV1.StorageMedium(volume.EmptyDir.Medium),
+						SizeLimit: &sizeLimit,
+					},
 				},
-			},
-		})
+			})
+		}
+		if volume.HostPath != nil {
+			volumeMounts = append(volumeMounts, coreV1.Volume{
+				Name: volume.HostPath.Name,
+				VolumeSource: coreV1.VolumeSource{
+					HostPath: &coreV1.HostPathVolumeSource{
+						Path: volume.HostPath.Path,
+						Type: (*coreV1.HostPathType)(&volume.HostPath.Type),
+					},
+				},
+			})
+		}
 	}
+
 	return volumeMounts
 }
 

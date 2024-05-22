@@ -463,187 +463,200 @@ user1   http://172.16.151.70:37811   Running   1
 $ kubectl get settings test -o json
 # 你会看到 sandboxed 下方有很多比如 PaddlePaddle， jupyter-lab， keras， vscode
 {
-    "apiVersion": "open-hydra-server.openhydra.io/v1",
-    "kind": "Setting",
-    "metadata": {
-        "creationTimestamp": null,
-        "name": "test"
-    },
-    "spec": {
-        "default_gpu_per_device": 0,
-        "plugin_list": {
-            "sandboxes": {
-                "PaddlePaddle": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
-                    "description": "PaddlePaddle 是在线的深度学习开发环境",
-                    "developmentInfo": [
-                        "PaddlePaddle-version: 2.1.0",
-                        "jupyter-lab-version: 4.0.9",
-                        "cuda-version: 12.0",
-                        "lan: chinese | english"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/workspace",
-                            "name": "paddle",
-                            "read_only": false,
-                            "source_path": "{workspace}/paddle/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": false,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": false,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "jupyter-lab": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-                    "description": "jupyter lab 是在线的 python 开发环境",
-                    "developmentInfo": [
-                        "python-version: 3.8",
-                        "jupyter-lab-version: 4.0.9",
-                        "torch-version: 1.8.1+cu111",
-                        "cuda-version: 11.1",
-                        "lan: chinese | english"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/root/notebook",
-                            "name": "jupyter-lab",
-                            "read_only": false,
-                            "source_path": "{workspace}/jupyter-lab/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": false,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/course-public",
-                            "name": "public-course",
-                            "read_only": false,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "keras": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
-                    "description": "keras 是在线的深度学习开发环境",
-                    "developmentInfo": [
-                        "keras-version: 2.6.1",
-                        "tensorflow-version: 2.6.0",
-                        "jupyter-lab-version: 4.0.9",
-                        "lan: chinese | english"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/workspace",
-                            "name": "keras",
-                            "read_only": false,
-                            "source_path": "{workspace}/keras/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": false,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": false,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "vscode": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                    "description": "vscode 是在线的代码编辑器,并可以自行编辑代码和安装各种开发环境",
-                    "developmentInfo": [
-                        "vscode-version: 1.85.1"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                    "ports": [
-                        3000
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/workspace",
-                            "name": "vscode",
-                            "read_only": false,
-                            "source_path": "{workspace}/vscode/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": false,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": false,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                }，
-                "my-app": {
-                    "cpuImageName": "docker.io/my-reg/my-app:latest",
-                    "description": "my-app 是在线的开发环境，帮助您快速学习大模型的开发使用",
-                    "developmentInfo": [
-                        "version: 0.01",
-                        "python-version": "3.18"
-                    ],
-                    "gpuImageName": "docker.io/my-reg/my-app:latest",
-                    "ports": [
-                        3000,
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/my-app",
-                            "name": "my-app",
-                            "read_only": false,
-                            "source_path": "{workspace}/my-app/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                }
+    apiVersion: v1
+data:
+  plugins: |
+    {
+        "sandboxes": {
+            "xedu": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "icon_name": "jupyter-lab.png",
+                "command": [],
+                "args": [],
+                "description": "XEdu的全名为OpenXLabEdu，是基于OpenXLab的教育版，为上海人工智能实验室浦育团队开发的一套完整的AI开发和学习工具。XEdu核心工具为计算机视觉库MMEdu、神经网络库BaseNN和传统机器学习库BaseML，以及数据集处理工具BaseDT和通用模型推理工具XEduHub等。",
+                "developmentInfo": [
+                    "python-version: 3.8",
+                    "jupyter-lab-version: 4.0.9",
+                    "torch-version: 1.8.1+cu111",
+                    "cuda-version: 11.1",
+                    "lan: chinese | english"
+                ],
+                "ports": [
+                  8888
+                ],
+                "volume_mounts": [
+                    {
+                        "name": "jupyter-lab",
+                        "mount_path": "/root/notebook"
+                    },
+                    {
+                        "name": "public-dataset",
+                        "mount_path": "/root/notebook/dataset-public",
+                        "read_only": true
+                    },
+                    {
+                        "name": "public-course",
+                        "mount_path": "/root/notebook/course-public",
+                        "read_only": true
+                    },
+                    {
+                        "name": "shm",
+                        "mount_path": "/dev/shm",
+                        "read_only": false
+                    }
+                ],
+                "volumes": [
+                    {
+                      "host_path": {
+                        "name": "jupyter-lab",
+                        "path": "{workspace}/jupyter-lab/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-dataset",
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-course",
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "empty_dir": {
+                        "name": "shm",
+                        "medium": "Memory",
+                        "size_limit": 2048
+                      }
+                    }
+                ]
+            },
+            "keras": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "icon_name": "keras.png",
+                "command": [],
+                "args": [],
+                "description": "Keras是在谷歌TensorFlow的基础上发展起来的深度学习开发框架。可以把Keras看成是TensorFlow的入门简化版本，开发门槛更低，拥有大量的用户。",
+                "developmentInfo": [
+                    "keras-version: 2.6.1",
+                    "tensorflow-version: 2.6.0",
+                    "jupyter-lab-version: 4.0.9",
+                    "lan: chinese | english"
+                ],
+                "ports": [
+                  8888
+                ],
+                "volume_mounts": [
+                    {
+                        "name": "keras",
+                        "mount_path": "/home/workspace"
+                    },
+                    {
+                        "name": "public-dataset",
+                        "mount_path": "/root/notebook/dataset-public",
+                        "read_only": true
+                    },
+                    {
+                        "name": "public-course",
+                        "mount_path": "/root/notebook/course-public",
+                        "read_only": true
+                    }
+                ],
+                "volumes": [
+                    {
+                      "host_path": {
+                        "name": "keras",
+                        "path": "{workspace}/keras/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-dataset",
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-course",
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    }
+                ]
+            },
+            "PaddlePaddle": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                "icon_name": "PaddlePaddle.png",
+                "command": [],
+                "args": [],
+                "description":"PaddlePaddle是百度开发的深度学习平台。PaddlePaddle集核心框架、基础模型库、端到端开发套件、丰富的工具组件、用户社区于一体，是中国首个自主研发、功能丰富、开源开放的产业级深度学习平台。",
+                "developmentInfo": [
+                    "PaddlePaddle-version: 2.1.0",
+                    "jupyter-lab-version: 4.0.9",
+                    "cuda-version: 12.0",
+                    "lan: chinese | english"
+                ],
+                "ports": [
+                  8888
+                ],
+                "volume_mounts": [
+                    {
+                        "name": "paddle",
+                        "mount_path": "/home/workspace"
+                    },
+                    {
+                        "name": "public-dataset",
+                        "mount_path": "/root/notebook/dataset-public",
+                        "source_path": "{dataset-public}",
+                        "read_only": true
+                    },
+                    {
+                        "name": "public-course",
+                        "mount_path": "/root/notebook/course-public",
+                        "source_path": "{course-public}",
+                        "read_only": true
+                    }
+                ],
+                "volumes": [
+                    {
+                      "host_path": {
+                        "name": "paddle",
+                        "path": "{workspace}/paddle/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-dataset",
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-course",
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    }
+                ]
             }
         }
-    },
-    "status": {}
+    }
+kind: ConfigMap
+metadata:
+  name: openhydra-plugin
+  namespace: open-hydra
 }
 ```
 
@@ -669,214 +682,51 @@ $  kubectl edit cm -n open-hydra openhydra-plugin
                     ],
                     "gpuImageName": "docker.io/my-reg/my-app:latest",
                     "ports": [
-                        3000, # 对应您的 3000 宽口
-                        8888 # 对应您的 8888 端口
+                        3000, // 对应您的 3000 宽口
+                        8888 // 对应您的 8888 端口
                     ],
                     "volume_mounts": [
                         {
-                            "mount_path": "/home/my-app", # 这里对应了你的镜像里的 working dir 目录
-                            "name": "my-app", # 名字可以自己定义，注意符合 dns 规范，建议 xx-xx 开头不要用数字
-                            "read_only": false, # 保持默认，除非你不想让用户写入
-                            "source_path": "{workspace}/my-app/{username}" # 如果 openhydra 的配置中 workspace 配置了 /mnt/workspace 那么镜像运行时会创建一个目录  /mnt/workspace/my-app/{username}
+                            "mount_path": "/home/my-app", // 这里对应了你的镜像里的 working dir 目录
+                            "name": "my-app", // 名字可以自己定义，注意符合 dns 规范，建议 xx-xx 开头不要用数字
+                            "read_only": false // 保持默认，除非你不想让用户写入
                         },
                         {
-                            "mount_path": "/root/notebook/dataset-public", # 这里对应了你的镜像里的数据集目录，假设你制作镜像的时候 mkdir -p /root/notebook/dataset-public 这里就保持默认
-                            "name": "public-dataset", # 保持默认即可 
-                            "read_only": true, # 我们不希望用户能直接修改挂在公共数据集里的内容我们这里设置为 true
-                            "source_path": "{dataset-public}"
+                            "mount_path": "/root/notebook/dataset-public", // 这里对应了你的镜像里的数据集目录，假设你制作镜像的时候 mkdir -p /root/notebook/dataset-public 这里就保持默认
+                            "name": "public-dataset", // 保持默认即可 
+                            "read_only": true // 我们不希望用户能直接修改挂在公共数据集里的内容我们这里设置为 true
                         },
                         {
                             "mount_path": "/root/notebook/course-public", # 同理如上
                             "name": "public-course", # 保持默认
-                            "read_only": true, # 同理如上
-                            "source_path": "{course-public}" # 保持默认
+                            "read_only": true # 同理如上
                         }
-                    ]
-                }
-# 最后看上去会是这样
-{
-    "apiVersion": "open-hydra-server.openhydra.io/v1",
-    "kind": "Setting",
-    "metadata": {
-        "creationTimestamp": null,
-        "name": "test"
-    },
-    "spec": {
-        "default_gpu_per_device": 0,
-        "plugin_list": {
-            "sandboxes": {
-                "PaddlePaddle": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
-                    "description": "PaddlePaddle 是在线的深度学习开发环境",
-                    "developmentInfo": [
-                        "PaddlePaddle-version: 2.1.0",
-                        "jupyter-lab-version: 4.0.9",
-                        "cuda-version: 12.0",
-                        "lan: chinese | english"
                     ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
+                    "volumes": [
                         {
-                            "mount_path": "/home/workspace",
-                            "name": "paddle",
-                            "read_only": false,
-                            "source_path": "{workspace}/paddle/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "jupyter-lab": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-                    "description": "jupyter lab 是在线的 python 开发环境",
-                    "developmentInfo": [
-                        "python-version: 3.8",
-                        "jupyter-lab-version: 4.0.9",
-                        "torch-version: 1.8.1+cu111",
-                        "cuda-version: 11.1",
-                        "lan: chinese | english"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/root/notebook",
-                            "name": "jupyter-lab",
-                            "read_only": false,
-                            "source_path": "{workspace}/jupyter-lab/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/course-public",
-                            "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "keras": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
-                    "description": "keras 是在线的深度学习开发环境",
-                    "developmentInfo": [
-                        "keras-version: 2.6.1",
-                        "tensorflow-version: 2.6.0",
-                        "jupyter-lab-version: 4.0.9",
-                        "lan: chinese | english"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
-                    "ports": [
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/workspace",
-                            "name": "keras",
-                            "read_only": false,
-                            "source_path": "{workspace}/keras/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                },
-                "vscode": {
-                    "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                    "description": "vscode 是在线的代码编辑器,并可以自行编辑代码和安装各种开发环境",
-                    "developmentInfo": [
-                        "vscode-version: 1.85.1"
-                    ],
-                    "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                    "ports": [
-                        3000
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/workspace",
-                            "name": "vscode",
-                            "read_only": false,
-                            "source_path": "{workspace}/vscode/{username}"
-                        },
-                        {
-                            "mount_path": "/root/notebook/dataset-public",
-                            "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
-                        },
-                        {
-                            "mount_path": "/mnt/public-course",
-                            "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
-                        }
-                    ]
-                }，
-                "my-app": {
-                    "cpuImageName": "docker.io/my-reg/my-app:latest",
-                    "description": "my-app 是在线的开发环境，帮助您快速学习大模型的开发使用",
-                    "developmentInfo": [
-                        "version: 0.01",
-                        "python-version": "3.18"
-                    ],
-                    "gpuImageName": "docker.io/my-reg/my-app:latest",
-                    "ports": [
-                        3000,
-                        8888
-                    ],
-                    "volume_mounts": [
-                        {
-                            "mount_path": "/home/my-app",
+                        "host_path": {
                             "name": "my-app",
-                            "read_only": false,
-                            "source_path": "{workspace}/my-app/{username}"
+                            "path": "{workspace}/my-app/{username}",
+                            "type": "DirectoryOrCreate"
+                        }
                         },
                         {
-                            "mount_path": "/root/notebook/dataset-public",
+                        "host_path": {
                             "name": "public-dataset",
-                            "read_only": true,
-                            "source_path": "{dataset-public}"
+                            "path": "{dataset-public}",
+                            "type": "DirectoryOrCreate"
+                        }
                         },
                         {
-                            "mount_path": "/mnt/public-course",
+                        "host_path": {
                             "name": "public-course",
-                            "read_only": true,
-                            "source_path": "{course-public}"
+                            "path": "{course-public}",
+                            "type": "DirectoryOrCreate"
+                        }
                         }
                     ]
                 }
-            }
-        }
-    },
-    "status": {}
-}
+
 
 # 创建一个 yaml
 $ cat <<EOF > user1-device-my-app.yaml

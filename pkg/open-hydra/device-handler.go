@@ -213,6 +213,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 	var ports map[string]int
 	var command, args []string
 	var volumeMounts []envApi.VolumeMount
+	var volumes []envApi.Volume
 	if _, found := plugins.Sandboxes[reqDevice.Spec.SandboxName]; !found {
 		// if sandbox name did not match any sandbox name then return error
 		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("sandbox %s not found, please ensure sandbox is proper config", reqDevice.Spec.SandboxName))
@@ -225,8 +226,9 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		}
 		// TODO: we need consider security issue for certain volume mount
 		volumeMounts = plugins.Sandboxes[reqDevice.Spec.SandboxName].VolumeMounts
+		volumes = plugins.Sandboxes[reqDevice.Spec.SandboxName].Volumes
 		// handle private dir creation
-		err = preCreateUserDir(volumeMounts, reqDevice.Spec.OpenHydraUsername, builder.Config)
+		err = preCreateUserDir(volumes, reqDevice.Spec.OpenHydraUsername, builder.Config)
 		if err != nil {
 			writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to create user dir: %v", err))
 			return
@@ -262,7 +264,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, volumeMounts, gpuSet, builder.kubeClient, command, args, ports)
+	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, volumeMounts, gpuSet, builder.kubeClient, command, args, ports, volumes)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return

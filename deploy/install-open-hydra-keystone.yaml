@@ -186,13 +186,13 @@ data:
   plugins: |
     {
         "sandboxes": {
-            "jupyter-lab": {
+            "xedu": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
                 "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
                 "icon_name": "jupyter-lab.png",
                 "command": [],
                 "args": [],
-                "description": "jupyter lab 是在线的 python 开发环境",
+                "description": "XEdu的全名为OpenXLabEdu，是基于OpenXLab的教育版，为上海人工智能实验室浦育团队开发的一套完整的AI开发和学习工具。XEdu核心工具为计算机视觉库MMEdu、神经网络库BaseNN和传统机器学习库BaseML，以及数据集处理工具BaseDT和通用模型推理工具XEduHub等。",
                 "developmentInfo": [
                     "python-version: 3.8",
                     "jupyter-lab-version: 4.0.9",
@@ -206,53 +206,52 @@ data:
                 "volume_mounts": [
                     {
                         "name": "jupyter-lab",
-                        "mount_path": "/root/notebook",
-                        "source_path": "{workspace}/jupyter-lab/{username}"
+                        "mount_path": "/root/notebook"
                     },
                     {
                         "name": "public-dataset",
                         "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}",
                         "read_only": true
                     },
                     {
                         "name": "public-course",
                         "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}",
                         "read_only": true
+                    },
+                    {
+                        "name": "shm",
+                        "mount_path": "/dev/shm",
+                        "read_only": false
                     }
-                ]
-            },
-            "vscode": {
-                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/vscode:1.85.1",
-                "icon_name": "vscode.png",
-                "command": [],
-                "args": [],
-                "description": "vscode 是在线的代码编辑器,并可以自行编辑代码和安装各种开发环境",
-                "developmentInfo": [
-                    "vscode-version: 1.85.1"
                 ],
-                "ports": [
-                  3000
-                ],
-                "volume_mounts": [
+                "volumes": [
                     {
-                        "name": "vscode",
-                        "mount_path": "/home/workspace",
-                        "source_path": "{workspace}/vscode/{username}"
+                      "host_path": {
+                        "name": "jupyter-lab",
+                        "path": "{workspace}/jupyter-lab/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
                     },
                     {
+                      "host_path": {
                         "name": "public-dataset",
-                        "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}",
-                        "read_only": true
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
                     },
                     {
+                      "host_path": {
                         "name": "public-course",
-                        "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}",
-                        "read_only": true
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "empty_dir": {
+                        "name": "shm",
+                        "medium": "Memory",
+                        "size_limit": 2048
+                      }
                     }
                 ]
             },
@@ -262,7 +261,7 @@ data:
                 "icon_name": "keras.png",
                 "command": [],
                 "args": [],
-                "description": "keras 是在线的深度学习开发环境",
+                "description": "Keras是在谷歌TensorFlow的基础上发展起来的深度学习开发框架。可以把Keras看成是TensorFlow的入门简化版本，开发门槛更低，拥有大量的用户。",
                 "developmentInfo": [
                     "keras-version: 2.6.1",
                     "tensorflow-version: 2.6.0",
@@ -275,8 +274,63 @@ data:
                 "volume_mounts": [
                     {
                         "name": "keras",
-                        "mount_path": "/home/workspace",
-                        "source_path": "{workspace}/keras/{username}"
+                        "mount_path": "/home/workspace"
+                    },
+                    {
+                        "name": "public-dataset",
+                        "mount_path": "/root/notebook/dataset-public",
+                        "read_only": true
+                    },
+                    {
+                        "name": "public-course",
+                        "mount_path": "/root/notebook/course-public",
+                        "read_only": true
+                    }
+                ],
+                "volumes": [
+                    {
+                      "host_path": {
+                        "name": "keras",
+                        "path": "{workspace}/keras/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-dataset",
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    },
+                    {
+                      "host_path": {
+                        "name": "public-course",
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
+                    }
+                ]
+            },
+            "PaddlePaddle": {
+                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
+                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                "icon_name": "PaddlePaddle.png",
+                "command": [],
+                "args": [],
+                "description":"PaddlePaddle是百度开发的深度学习平台。PaddlePaddle集核心框架、基础模型库、端到端开发套件、丰富的工具组件、用户社区于一体，是中国首个自主研发、功能丰富、开源开放的产业级深度学习平台。",
+                "developmentInfo": [
+                    "PaddlePaddle-version: 2.1.0",
+                    "jupyter-lab-version: 4.0.9",
+                    "cuda-version: 12.0",
+                    "lan: chinese | english"
+                ],
+                "ports": [
+                  8888
+                ],
+                "volume_mounts": [
+                    {
+                        "name": "paddle",
+                        "mount_path": "/home/workspace"
                     },
                     {
                         "name": "public-dataset",
@@ -290,41 +344,28 @@ data:
                         "source_path": "{course-public}",
                         "read_only": true
                     }
-                ]
-            },
-            "PaddlePaddle": {
-                "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
-                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
-                "icon_name": "PaddlePaddle.png",
-                "command": [],
-                "args": [],
-                "description": "PaddlePaddle 是在线的深度学习开发环境",
-                "developmentInfo": [
-                    "PaddlePaddle-version: 2.1.0",
-                    "jupyter-lab-version: 4.0.9",
-                    "cuda-version: 12.0",
-                    "lan: chinese | english"
                 ],
-                "ports": [
-                  8888
-                ],
-                "volume_mounts": [
+                "volumes": [
                     {
+                      "host_path": {
                         "name": "paddle",
-                        "mount_path": "/home/workspace",
-                        "source_path": "{workspace}/paddle/{username}"
+                        "path": "{workspace}/paddle/{username}",
+                        "type": "DirectoryOrCreate"
+                      }
                     },
                     {
+                      "host_path": {
                         "name": "public-dataset",
-                        "mount_path": "/root/notebook/dataset-public",
-                        "source_path": "{dataset-public}",
-                        "read_only": true
+                        "path": "{dataset-public}",
+                        "type": "DirectoryOrCreate"
+                      }
                     },
                     {
+                      "host_path": {
                         "name": "public-course",
-                        "mount_path": "/root/notebook/course-public",
-                        "source_path": "{course-public}",
-                        "read_only": true
+                        "path": "{course-public}",
+                        "type": "DirectoryOrCreate"
+                      }
                     }
                 ]
             }
