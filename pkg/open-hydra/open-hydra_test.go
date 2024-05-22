@@ -41,14 +41,14 @@ var _ = Describe("open-hydra api-resource test", func() {
 			SingularName: "xuser",
 			Namespaced:   false,
 			Kind:         OpenHydraUserKind,
-			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete"},
+			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete", "patch"},
 		},
 		{
 			Name:         DevicePath,
 			SingularName: "dev",
 			Namespaced:   false,
 			Kind:         DeviceKind,
-			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete"},
+			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete", "patch"},
 		},
 		{
 			Name:         SumUpPath,
@@ -516,6 +516,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		builder.AddXUserCreateRoute()
 		builder.AddXUserGetRoute()
 		builder.AddXUserUpdateRoute()
+		builder.AddXUserPatchRoute()
 		builder.AddXUserDeleteRoute()
 		builder.AddDeviceListRoute()
 		builder.AddDeviceCreateRoute()

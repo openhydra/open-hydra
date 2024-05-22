@@ -140,10 +140,32 @@ func (builder *OpenHydraRouteBuilder) AddXUserUpdateRoute() {
 		Returns(http.StatusOK, "OK", xUserV1.OpenHydraUser{}))
 }
 
+func (builder *OpenHydraRouteBuilder) AddXUserPatchRoute() {
+	path := "/" + OpenHydraUserPath + "/{name}"
+	builder.addPathAuthorization(path, http.MethodPatch, 1)
+	// for kubectl apply we need to add application/merge-patch+json as acceptable content type
+	builder.RootWS.Route(builder.RootWS.PATCH(path).Operation("getPatchUser").
+		Consumes(restful.MIME_JSON, restful.MIME_XML, "application/merge-patch+json").
+		To(builder.XUserUpdateRouteHandler).
+		Returns(http.StatusNotFound, "not found", "").
+		Returns(http.StatusInternalServerError, "internal server error", "").
+		Returns(http.StatusForbidden, "forbidden", "").
+		Returns(http.StatusUnauthorized, "unauthorized", "").
+		Returns(http.StatusOK, "OK", xUserV1.OpenHydraUser{}))
+}
+
 func (builder *OpenHydraRouteBuilder) XUserUpdateRouteHandler(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	xUser := xUserV1.OpenHydraUser{}
-	err := request.ReadEntity(&xUser)
+	var err error
+	// for patch from kubectl we may go with application/merge-patch+json
+	if request.Request.Header.Get("Content-Type") == "application/merge-patch+json" {
+		mergePatchJsonEntityReader := restful.NewEntityAccessorJSON("application/merge-patch+json")
+		err = mergePatchJsonEntityReader.Read(request, &xUser)
+	} else {
+		// for header with application/json or application/xml
+		err = request.ReadEntity(&xUser)
+	}
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("Failed to read request entity: %v", err))
 		return

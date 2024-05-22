@@ -27,14 +27,14 @@ func ApiResources() []metaV1.APIResource {
 			SingularName: "xuser",
 			Namespaced:   false,
 			Kind:         OpenHydraUserKind,
-			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete"},
+			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete", "patch"},
 		},
 		{
 			Name:         DevicePath,
 			SingularName: "dev",
 			Namespaced:   false,
 			Kind:         DeviceKind,
-			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete"},
+			Verbs:        metaV1.Verbs{"get", "list", "watch", "create", "update", "delete", "patch"},
 		},
 		{
 			Name:         SumUpPath,
