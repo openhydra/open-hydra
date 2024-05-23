@@ -687,6 +687,25 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 		})
 
+		It("open-hydra user patch should be expected", func() {
+			student.Spec.Description = "test-patch"
+			body1, err := json.Marshal(student)
+			Expect(err).To(BeNil())
+			_, r2 := callApi(http.MethodPatch, openHydraUsersURL+"/student", createTokenValue(teacher, nil), bytes.NewReader(body1))
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var test *xUserV1.OpenHydraUser
+			test, _ = fakeDb.GetUser("student")
+			Expect(test.Spec.Description).To(Equal("test-patch"))
+
+			student.Spec.Description = "test-patch2"
+			body2, err := json.Marshal(student)
+			Expect(err).To(BeNil())
+			_, r2 = callApi(http.MethodPatch, openHydraUsersURL+"/student", createTokenValue(teacher, map[string]string{"Content-Type": "application/merge-patch+json"}), bytes.NewReader(body2))
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			test, _ = fakeDb.GetUser("student")
+			Expect(test.Spec.Description).To(Equal("test-patch2"))
+		})
+
 		It("open-hydra user get should be expected", func() {
 			_, r2 := callApi(http.MethodGet, openHydraUsersURL+"/teacher", createTokenValue(teacher, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
