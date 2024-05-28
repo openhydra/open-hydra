@@ -14,6 +14,8 @@ var _ = Describe("open-hydra config test", func() {
 	kubeConfigPath := "/tmp/kube-config.yaml"
 	testConfig := DefaultConfig()
 	testConfig2 := *testConfig
+	testConfig2.MySqlConfig.Character = "utf8mb4"
+	testConfig2.MySqlConfig.Collation = "utf8mb4_general_ci"
 	testConfig2.LeaderElection = nil
 	testKubeConfig := `apiVersion: v1
 clusters:
@@ -49,7 +51,14 @@ users:
 			Expect(targetConfig.DefaultCpuPerDevice).To(Equal(testConfig.DefaultCpuPerDevice))
 			Expect(targetConfig.DefaultRamPerDevice).To(Equal(testConfig.DefaultRamPerDevice))
 			Expect(targetConfig.DefaultGpuPerDevice).To(Equal(testConfig.DefaultGpuPerDevice))
-			Expect(targetConfig.MySqlConfig).To(Equal(DefaultMySqlConfig()))
+			Expect(targetConfig.MySqlConfig.Address).To(Equal("mysql.svc.cluster.local"))
+			Expect(targetConfig.MySqlConfig.Port).To(Equal(uint16(3306)))
+			Expect(targetConfig.MySqlConfig.Username).To(Equal("root"))
+			Expect(targetConfig.MySqlConfig.Password).To(Equal("root"))
+			Expect(targetConfig.MySqlConfig.DataBaseName).To(Equal("open-hydra"))
+			Expect(targetConfig.MySqlConfig.Protocol).To(Equal("tcp"))
+			Expect(targetConfig.MySqlConfig.Character).To(Equal("utf8mb4"))
+			Expect(targetConfig.MySqlConfig.Collation).To(Equal("utf8mb4_general_ci"))
 			Expect(targetConfig.EtcdConfig).To(Equal(DefaultEtcdConfig()))
 		})
 		It("test default value will not overwrite by empty value ", func() {
@@ -59,9 +68,11 @@ users:
 			Expect(err).To(BeNil())
 			Expect(targetConfig.LeaderElection).To(Equal(testConfig.LeaderElection))
 			Expect(targetConfig.AuthDelegateConfig).To(BeNil())
+			Expect(targetConfig.MySqlConfig.Character).To(Equal("utf8mb4"))
+			Expect(targetConfig.MySqlConfig.Collation).To(Equal("utf8mb4_general_ci"))
 		})
 		AfterEach(func() {
-			//_ = util.DeleteFile(configFile)
+			_ = util.DeleteFile(configFile)
 			_ = util.DeleteFile(configFile2)
 		})
 	})

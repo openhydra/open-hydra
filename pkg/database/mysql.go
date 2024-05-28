@@ -222,7 +222,7 @@ func (db *Mysql) InitDb() error {
 	defer inst.Close()
 
 	// create database openhydra
-	_, err = inst.Exec("CREATE DATABASE IF NOT EXISTS openhydra")
+	_, err = inst.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS openhydra CHARACTER SET %s COLLATE %s", db.Config.MySqlConfig.Character, db.Config.MySqlConfig.Collation))
 	if err != nil {
 		return err
 	}
