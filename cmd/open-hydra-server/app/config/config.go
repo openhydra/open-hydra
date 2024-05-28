@@ -152,6 +152,8 @@ type MySqlConfig struct {
 	Password     string `json:"password" yaml:"password"`
 	DataBaseName string `json:"database_name" yaml:"databaseName"`
 	Protocol     string `json:"protocol" yaml:"protocol"`
+	Character    string `json:"character" yaml:"character"`
+	Collation    string `json:"collation" yaml:"collation"`
 }
 
 type AuthDelegateConfig struct {
@@ -186,6 +188,8 @@ func DefaultMySqlConfig() *MySqlConfig {
 		Password:     "root",
 		DataBaseName: "open-hydra",
 		Protocol:     "tcp",
+		Character:    "utf8mb3",
+		Collation:    "utf8mb3_general_ci",
 	}
 }
 
