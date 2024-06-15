@@ -264,7 +264,23 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	err = builder.k8sHelper.CreateDeployment(builder.CombineReqLimit(reqDevice), image, builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, volumeMounts, gpuSet, builder.kubeClient, command, args, ports, volumes)
+	deployParameter := &k8s.DeploymentParameters{
+		CpuMemorySet: builder.CombineReqLimit(reqDevice),
+		Image:        image,
+		Namespace:    builder.Config.OpenHydraNamespace,
+		Username:     reqDevice.Spec.OpenHydraUsername,
+		SandboxName:  reqDevice.Spec.SandboxName,
+		VolumeMounts: volumeMounts,
+		GpuSet:       gpuSet,
+		Client:       builder.kubeClient,
+		Command:      command,
+		Args:         args,
+		Ports:        ports,
+		Volumes:      volumes,
+		Affinity:     reqDevice.Spec.Affinity,
+	}
+
+	err = builder.k8sHelper.CreateDeployment(deployParameter)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return

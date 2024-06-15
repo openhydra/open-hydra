@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"fmt"
-	"open-hydra/pkg/open-hydra/apis"
 
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
@@ -74,15 +73,15 @@ func (f *Fake) DeleteUserDeployment(label, namespace string, client *kubernetes.
 	delete(f.labelDeploy, label)
 	return nil
 }
-func (f *Fake) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumeMounts []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int, volumes []apis.Volume) error {
-	label := fmt.Sprintf("%s=%s", OpenHydraUserLabelKey, studentID)
+func (f *Fake) CreateDeployment(deployParameter *DeploymentParameters) error {
+	label := fmt.Sprintf("%s=%s", OpenHydraUserLabelKey, deployParameter.Username)
 	f.labelDeploy[label] = append(f.labelDeploy[label], appsV1.Deployment{})
-	f.namespacedDeploy[namespace] = append(f.namespacedDeploy[namespace], appsV1.Deployment{})
+	f.namespacedDeploy[deployParameter.Namespace] = append(f.namespacedDeploy[deployParameter.Namespace], appsV1.Deployment{})
 	f.labelPod[label] = append(f.labelPod[label], coreV1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Labels: map[string]string{
-				OpenHydraUserLabelKey: studentID,
-				OpenHydraSandboxKey:   sandboxName,
+				OpenHydraUserLabelKey: deployParameter.Username,
+				OpenHydraSandboxKey:   deployParameter.SandboxName,
 			},
 		},
 	})

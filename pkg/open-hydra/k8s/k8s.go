@@ -130,50 +130,52 @@ func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client 
 	return nil
 }
 
-func (help *DefaultHelper) CreateDeployment(cpuMemorySet CpuMemorySet, image, namespace, studentID, sandboxName string, volumeMounts []apis.VolumeMount, gpuSet apis.GpuSet, client *kubernetes.Clientset, command, args []string, ports map[string]int, volumes []apis.Volume) error {
-	if client == nil {
+func (help *DefaultHelper) CreateDeployment(deployParameter *DeploymentParameters) error {
+	if deployParameter.Client == nil {
 		return fmt.Errorf("client is nil")
 	}
-	baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, studentID)
+	baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, deployParameter.Username)
 	replicas := int32(1)
-	resourceReq, resourceLim := createResource(cpuMemorySet, gpuSet)
+	resourceReq, resourceLim := createResource(deployParameter.CpuMemorySet, deployParameter.GpuSet)
 	ideTypeLabelValue := OpenHydraIDELabelUnset
 	deployment := &appsV1.Deployment{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      baseName,
-			Namespace: namespace,
+			Namespace: deployParameter.Namespace,
 			Labels: map[string]string{
-				OpenHydraUserLabelKey:     studentID,
+				OpenHydraUserLabelKey:     deployParameter.Username,
 				OpenHydraWorkloadLabelKey: OpenHydraWorkloadLabelValue,
 				OpenHydraIDELabelKey:      ideTypeLabelValue,
-				OpenHydraSandboxKey:       sandboxName,
+				OpenHydraSandboxKey:       deployParameter.SandboxName,
 			},
 		},
 		Spec: appsV1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metaV1.LabelSelector{
 				MatchLabels: map[string]string{
-					OpenHydraUserLabelKey: studentID,
+					OpenHydraUserLabelKey: deployParameter.Username,
 				},
 			},
 			Template: coreV1.PodTemplateSpec{
 				ObjectMeta: metaV1.ObjectMeta{
 					Labels: map[string]string{
-						OpenHydraUserLabelKey:     studentID,
+						OpenHydraUserLabelKey:     deployParameter.Username,
 						OpenHydraWorkloadLabelKey: OpenHydraWorkloadLabelValue,
 						OpenHydraIDELabelKey:      ideTypeLabelValue,
-						OpenHydraSandboxKey:       sandboxName,
+						OpenHydraSandboxKey:       deployParameter.SandboxName,
 					},
 				},
 				Spec: coreV1.PodSpec{
-					Volumes:    createVolume(volumes),
-					Containers: createContainers(baseName, image, volumeMounts, resourceReq, resourceLim, command, args, ports),
+					Volumes:    createVolume(deployParameter.Volumes),
+					Containers: createContainers(baseName, deployParameter.Image, deployParameter.VolumeMounts, resourceReq, resourceLim, deployParameter.Command, deployParameter.Args, deployParameter.Ports),
 				},
 			},
 		},
 	}
 
-	_, err := client.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metaV1.CreateOptions{})
+	deployment.Spec.Template.Spec.Affinity = deployParameter.Affinity
+
+	_, err := deployParameter.Client.AppsV1().Deployments(deployParameter.Namespace).Create(context.TODO(), deployment, metaV1.CreateOptions{})
 	if err != nil {
 		return err
 	}

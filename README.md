@@ -437,6 +437,16 @@ spec:
   openHydraUsername: user1
   deviceGpu: 1
   sandboxName: jupyter-lab
+  # 如果多节点情况下你可以通过 affinity 实现亲和
+  #affinity:
+  #  nodeAffinity:
+  #    requiredDuringSchedulingIgnoredDuringExecution:
+  #      nodeSelectorTerms:
+  #      - matchExpressions:
+  #        - key: "kubernetes.io/hostname"
+  #          operator: In
+  #          values:
+  #          - "your-node"
 EOF
 
 # 创建
