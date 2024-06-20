@@ -55,12 +55,7 @@ jobs:
 
       - name: Run buildx
         run: |
-          tag=latest
-          if [[ "${{ steps.extract_branch.outputs.branch }}" == "master" ]];then 
-             tag=latest
-          elif [[ "${{ steps.extract_tag.outputs.version }}" == v* ]]; then
-            tag="${{ steps.extract_tag.outputs.version }}"
-          fi
+          tag=release-0.1
 
           echo extract_tag   ${{ steps.extract_tag.outputs.version }}
           echo extract_branch  ${{ steps.extract_branch.outputs.branch }}
