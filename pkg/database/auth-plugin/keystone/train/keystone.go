@@ -105,6 +105,7 @@ func (k *KeystoneAuthPlugin) GetUser(name string) (*xUserV1.OpenHydraUser, error
 		}
 	} else {
 		userContainer.User.OpenhydraUser.ObjectMeta.UID = types.UID(userContainer.User.ID)
+		userContainer.User.OpenhydraUser.ObjectMeta.Name = userContainer.User.ID
 		result = userContainer.User.OpenhydraUser
 	}
 
