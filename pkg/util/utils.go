@@ -64,8 +64,11 @@ func CommonRequest(requestUrl, httpMethod, nameServer string, postBody json.RawM
 		req.Header.Set(key, val)
 	}
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: 1000 * time.Second,
 	}
+	// client := &http.Client{
+	// 	Timeout: timeout,
+	// }
 	tr := &http.Transport{
 		DisableKeepAlives: disableKeepAlive,
 	}
