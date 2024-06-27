@@ -21,8 +21,8 @@ var typeMetaOpenhydraUser = metaV1.TypeMeta{
 }
 
 var testUserList = UserContainer{[]User{
-	{ID: "test1", Name: "test1", Password: "test1", Email: "test1@maas.com", Enabled: true},
-	{ID: "test2", Name: "test2", Password: "test2", Enabled: true, OpenhydraUser: &xUserV1.OpenHydraUser{
+	{ID: "test1id", Name: "test1", Password: "test1", Email: "test1@maas.com", Enabled: true},
+	{ID: "test2id", Name: "test2", Password: "test2", Enabled: true, OpenhydraUser: &xUserV1.OpenHydraUser{
 		TypeMeta: typeMetaOpenhydraUser,
 		ObjectMeta: metaV1.ObjectMeta{
 			Name: "test2",
@@ -33,7 +33,8 @@ var testUserList = UserContainer{[]User{
 			Role:     2,
 		},
 	}},
-	{ID: "test3", Name: "test3", Password: "test3", Email: "test3@maas.com", Enabled: true},
+	{ID: "test3id", Name: "test3", Password: "test3", Email: "test3@maas.com", Enabled: true},
+	{ID: "adminid", Name: "admin", Password: "admin", Email: "test3@maas.com", Enabled: true},
 },
 }
 
@@ -93,7 +94,7 @@ var testRouter = func(ws *restful.WebService) {
 			response.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if userID == "test1" {
+		if userID == "test1id" {
 			userJson, err := json.Marshal(&struct {
 				User *User `json:"user"`
 			}{User: &testUserList.Users[0]})
@@ -104,7 +105,7 @@ var testRouter = func(ws *restful.WebService) {
 			response.Write(userJson)
 			return
 		}
-		if userID == "test2" {
+		if userID == "test2id" {
 			userJson, err := json.Marshal(&struct {
 				User *User `json:"user"`
 			}{User: &testUserList.Users[1]})
@@ -115,7 +116,7 @@ var testRouter = func(ws *restful.WebService) {
 			response.Write(userJson)
 			return
 		}
-		if userID == "test3" {
+		if userID == "test3id" {
 			userJson, err := json.Marshal(&struct {
 				User *User `json:"user"`
 			}{User: &testUserList.Users[2]})
@@ -126,7 +127,7 @@ var testRouter = func(ws *restful.WebService) {
 			response.Write(userJson)
 			return
 		}
-		if userID == "admin" {
+		if userID == "adminid" {
 			userJson, err := json.Marshal(&struct {
 				User *User `json:"user"`
 			}{User: &User{Name: "admin", ID: "admin", Password: "admin"}})
@@ -262,6 +263,32 @@ var _ = Describe("open-hydra-server util test", func() {
 		})
 	})
 
+	Describe("GetRawKeystoneUserList test", func() {
+		It("should be expected", func() {
+			serverConfig.AuthDelegateConfig.KeystoneConfig.Endpoint = "http://localhost:20088"
+			stopChan := make(chan struct{}, 1)
+			go util.StartMockServer(20088, testRouter, stopChan)
+			time.Sleep(2 * time.Second)
+			defer close(stopChan)
+			users, err := keystone.GetRawKeystoneUserList()
+			Expect(err).To(BeNil())
+			Expect(len(users.Users)).To(Equal(len(testUserList.Users)))
+		})
+	})
+
+	Describe("GetUserIdFromName test", func() {
+		It("should be expected", func() {
+			serverConfig.AuthDelegateConfig.KeystoneConfig.Endpoint = "http://localhost:20089"
+			stopChan := make(chan struct{}, 1)
+			go util.StartMockServer(20089, testRouter, stopChan)
+			time.Sleep(2 * time.Second)
+			defer close(stopChan)
+			id, err := keystone.GetUserIdFromName("test1")
+			Expect(err).To(BeNil())
+			Expect(id).To(Equal("test1id"))
+		})
+	})
+
 	Describe("ListUsers test", func() {
 		It("should be expected", func() {
 			serverConfig.AuthDelegateConfig.KeystoneConfig.Endpoint = "http://localhost:20083"
@@ -272,21 +299,21 @@ var _ = Describe("open-hydra-server util test", func() {
 			users, err := keystone.ListUsers()
 			Expect(err).To(BeNil())
 			Expect(len(users.Items)).To(Equal(len(testUserList.Users)))
-			Expect(users.Items[0].Name).To(Equal(testUserList.Users[0].ID))
+			Expect(users.Items[0].Name).To(Equal(testUserList.Users[0].Name))
 			Expect(users.Items[0].Spec.ChineseName).To(Equal(testUserList.Users[0].Name))
 			Expect(users.Items[0].Spec.Password).To(Equal("*********"))
 			Expect(users.Items[0].Spec.Role).To(Equal(1))
 			Expect(users.Items[0].TypeMeta).To(Equal(typeMetaOpenhydraUser))
 			Expect(users.Items[0].Spec.Email).To(Equal(testUserList.Users[0].Email))
 			Expect(string(users.Items[0].UID)).To(Equal(testUserList.Users[0].ID))
-			Expect(users.Items[1].Name).To(Equal(testUserList.Users[1].ID))
+			Expect(users.Items[1].Name).To(Equal(testUserList.Users[1].Name))
 			Expect(users.Items[1].Spec.ChineseName).To(Equal(""))
 			Expect(users.Items[1].Spec.Password).To(Equal(testUserList.Users[1].Password))
 			Expect(users.Items[1].Spec.Role).To(Equal(2))
 			Expect(users.Items[1].TypeMeta).To(Equal(typeMetaOpenhydraUser))
 			Expect(users.Items[1].Spec.Email).To(Equal(testUserList.Users[1].OpenhydraUser.Spec.Email))
 			Expect(string(users.Items[1].UID)).To(Equal(testUserList.Users[1].ID))
-			Expect(users.Items[2].Name).To(Equal(testUserList.Users[2].ID))
+			Expect(users.Items[2].Name).To(Equal(testUserList.Users[2].Name))
 			Expect(users.Items[2].Spec.ChineseName).To(Equal(testUserList.Users[2].Name))
 			Expect(users.Items[2].Spec.Password).To(Equal("*********"))
 			Expect(users.Items[2].Spec.Role).To(Equal(1))
@@ -305,7 +332,8 @@ var _ = Describe("open-hydra-server util test", func() {
 			defer close(stopChan)
 			user, err := keystone.GetUser("test1")
 			Expect(err).To(BeNil())
-			Expect(user.Name).To(Equal(testUserList.Users[0].ID))
+			Expect(string(user.UID)).To(Equal(testUserList.Users[0].ID))
+			Expect(user.Name).To(Equal(testUserList.Users[0].Name))
 			Expect(user.Spec.ChineseName).To(Equal(testUserList.Users[0].Name))
 			Expect(user.Spec.Password).To(Equal("*********"))
 			Expect(user.Spec.Role).To(Equal(1))

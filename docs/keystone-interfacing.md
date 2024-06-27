@@ -6,7 +6,7 @@
 
 * openhydra 已经正常运行中
 * keystone 服务已经部署好了，并正常工作
-* 注意在和 keystone 对接后，会以 keystone 中而 user id 做为用户在 openhydra
+* 注意在和 keystone 对接后，会以 keystone 中而 username 做为用户在 openhydra
 
 ## 修改 openhydra 配置文件
 

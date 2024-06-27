@@ -24,16 +24,6 @@ type KeystoneAuthPlugin struct {
 // implement IDataBaseUser
 
 func (k *KeystoneAuthPlugin) CreateUser(user *xUserV1.OpenHydraUser) error {
-
-	_, err := k.GetUser(user.ObjectMeta.Name)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			slog.Error("Failed to check user existence", err)
-			return err
-		}
-	}
-
-	// for keystone we keep name in chinese name
 	user.Spec.ChineseName = user.ObjectMeta.Name
 	util.FillKindAndApiVersion(&user.TypeMeta, "OpenHydraUser")
 
@@ -67,9 +57,50 @@ func (k *KeystoneAuthPlugin) CreateUser(user *xUserV1.OpenHydraUser) error {
 	return nil
 }
 
+// due to keystone do not have api to query user with name
+// we have to list all users and find the user id by name
+func (k *KeystoneAuthPlugin) GetUserIdFromName(name string) (string, error) {
+	userCollection, err := k.GetRawKeystoneUserList()
+	if err != nil {
+		slog.Error("Failed to get raw keystone user list", err)
+		return "", err
+	}
+
+	for _, user := range userCollection.Users {
+		if user.Name == name {
+			return user.ID, nil
+		}
+	}
+
+	return "", fmt.Errorf(fmt.Sprintf("user %s not found", name))
+}
+
+func (k *KeystoneAuthPlugin) GetRawKeystoneUserList() (UserContainer, error) {
+	body, _, _, err := k.commentRequestAutoRenewToken("/v3/users", http.MethodGet, nil)
+	if err != nil {
+		slog.Error("Failed to list users", err)
+		return UserContainer{}, err
+	}
+
+	var userCollection UserContainer
+	err = json.Unmarshal(body, &userCollection)
+	if err != nil {
+		slog.Error("Failed to unmarshal users", err)
+		return UserContainer{}, err
+	}
+	return userCollection, nil
+}
+
 // Get a user by name
 func (k *KeystoneAuthPlugin) GetUser(name string) (*xUserV1.OpenHydraUser, error) {
-	body, _, code, err := k.commentRequestAutoRenewToken(fmt.Sprintf("/v3/users/%s", name), http.MethodGet, nil)
+
+	id, err := k.GetUserIdFromName(name)
+	if err != nil {
+		slog.Error("Failed to get user id", err)
+		return nil, err
+	}
+
+	body, _, code, err := k.commentRequestAutoRenewToken(fmt.Sprintf("/v3/users/%s", id), http.MethodGet, nil)
 	if code == http.StatusNotFound {
 		return nil, errors.NewNotFound(xUserV1.Resource("user"), name)
 	}
@@ -93,8 +124,11 @@ func (k *KeystoneAuthPlugin) GetUser(name string) (*xUserV1.OpenHydraUser, error
 		meta := &metaV1.TypeMeta{}
 		util.FillKindAndApiVersion(meta, "OpenHydraUser")
 		result = &xUserV1.OpenHydraUser{
-			TypeMeta:   *meta,
-			ObjectMeta: metaV1.ObjectMeta{Name: userContainer.User.ID, UID: types.UID(userContainer.User.ID)}, // note keep keystone user id in object meta UID is important
+			TypeMeta: *meta,
+			ObjectMeta: metaV1.ObjectMeta{
+				Name: userContainer.User.Name, UID: types.UID(userContainer.User.ID),
+				Annotations: map[string]string{"keystone_id": userContainer.User.ID},
+			}, // note keep keystone user id in object meta UID is important
 			Spec: xUserV1.OpenHydraUserSpec{
 				Email:       userContainer.User.Email,
 				ChineseName: userContainer.User.Name, // put keystone account as display name
@@ -105,7 +139,8 @@ func (k *KeystoneAuthPlugin) GetUser(name string) (*xUserV1.OpenHydraUser, error
 		}
 	} else {
 		userContainer.User.OpenhydraUser.ObjectMeta.UID = types.UID(userContainer.User.ID)
-		userContainer.User.OpenhydraUser.ObjectMeta.Name = userContainer.User.ID
+		userContainer.User.OpenhydraUser.ObjectMeta.Name = userContainer.User.Name
+		userContainer.User.OpenhydraUser.ObjectMeta.Annotations = map[string]string{"keystone_id": userContainer.User.ID}
 		result = userContainer.User.OpenhydraUser
 	}
 
@@ -126,7 +161,14 @@ func (k *KeystoneAuthPlugin) DeleteUser(name string) error {
 	if name == "admin" || name == "service" {
 		return fmt.Errorf("build in user can not be deleted")
 	}
-	_, _, _, err := k.commentRequestAutoRenewToken(fmt.Sprintf("/v3/users/%s", name), http.MethodDelete, nil)
+
+	id, err := k.GetUserIdFromName(name)
+	if err != nil {
+		slog.Error("Failed to get user id", err)
+		return err
+	}
+
+	_, _, _, err = k.commentRequestAutoRenewToken(fmt.Sprintf("/v3/users/%s", id), http.MethodDelete, nil)
 	if err != nil {
 		slog.Error("Failed to delete user", err)
 		return err
@@ -136,16 +178,9 @@ func (k *KeystoneAuthPlugin) DeleteUser(name string) error {
 
 // List all users
 func (k *KeystoneAuthPlugin) ListUsers() (xUserV1.OpenHydraUserList, error) {
-	body, _, _, err := k.commentRequestAutoRenewToken("/v3/users", http.MethodGet, nil)
+	userCollection, err := k.GetRawKeystoneUserList()
 	if err != nil {
-		slog.Error("Failed to list users", err)
-		return xUserV1.OpenHydraUserList{}, err
-	}
-
-	var userCollection UserContainer
-	err = json.Unmarshal(body, &userCollection)
-	if err != nil {
-		slog.Error("Failed to unmarshal users", err)
+		slog.Error("Failed to get raw keystone user list", err)
 		return xUserV1.OpenHydraUserList{}, err
 	}
 
@@ -161,8 +196,11 @@ func (k *KeystoneAuthPlugin) ListUsers() (xUserV1.OpenHydraUserList, error) {
 			util.FillKindAndApiVersion(meta, "OpenHydraUser")
 			// we use id as account in openhydra to fit openhydra user management behavior
 			userList.Items = append(userList.Items, xUserV1.OpenHydraUser{
-				TypeMeta:   *meta,
-				ObjectMeta: metaV1.ObjectMeta{Name: user.ID, UID: types.UID(user.ID)}, // note keep keystone user id in object meta UID is important
+				TypeMeta: *meta,
+				ObjectMeta: metaV1.ObjectMeta{
+					Name: user.Name, UID: types.UID(user.ID),
+					Annotations: map[string]string{"keystone_id": user.ID},
+				}, // note keep keystone user id in object meta UID is important
 				Spec: xUserV1.OpenHydraUserSpec{
 					Email:       user.Email,
 					Password:    "*********",
@@ -173,7 +211,8 @@ func (k *KeystoneAuthPlugin) ListUsers() (xUserV1.OpenHydraUserList, error) {
 			})
 		} else {
 			userCollection.Users[index].OpenhydraUser.ObjectMeta.UID = types.UID(user.ID)
-			userCollection.Users[index].OpenhydraUser.Name = user.ID
+			userCollection.Users[index].OpenhydraUser.Name = user.Name
+			userCollection.Users[index].OpenhydraUser.ObjectMeta.Annotations = map[string]string{"keystone_id": user.ID}
 			userList.Items = append(userList.Items, *userCollection.Users[index].OpenhydraUser)
 		}
 	}
@@ -191,7 +230,7 @@ func (k *KeystoneAuthPlugin) LoginUser(name, password string) (*xUserV1.OpenHydr
 		return nil, err
 	}
 
-	_, _, err = k.RequestToken(user.Spec.ChineseName, password, false)
+	_, _, err = k.RequestToken(user.Name, password, false)
 	if err != nil {
 		slog.Error("Failed to login user", err)
 		return nil, err

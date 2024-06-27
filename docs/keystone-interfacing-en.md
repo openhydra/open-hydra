@@ -6,7 +6,7 @@ This document describes how to interface openhydra with keystone for authenticat
 
 * openhydra is running normally
 * The keystone service has been deployed and is working properly
-* Note that after interfacing with keystone, the user id in keystone will be used as the account in openhydra
+* Note that after interfacing with keystone, the username in keystone will be used as the account in openhydra
 
 ## Modify the openhydra configuration file
 
