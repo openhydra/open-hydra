@@ -73,16 +73,16 @@ type DomainDetails struct {
 }
 
 type User struct {
-	ID                string            `json:"id"`
-	Name              string            `json:"name"`
+	ID                string            `json:"id,omitempty"`
+	Name              string            `json:"name,omitempty"`
 	DomainID          string            `json:"domain_id,omitempty"`
 	ProjectID         string            `json:"project_id,omitempty"`
 	Enabled           bool              `json:"enabled,omitempty"`
 	PasswordExpiresAt string            `json:"password_expires_at,omitempty"`
 	Password          string            `json:"password,omitempty"`
 	Domain            *Domain           `json:"domain,omitempty"`
-	Options           Options           `json:"options,omitempty"`
-	Links             Links             `json:"links,omitempty"`
+	Options           *Options          `json:"options,omitempty"`
+	Links             *Links            `json:"links,omitempty"`
 	OpenhydraUser     *v1.OpenHydraUser `json:"openhydra,omitempty"`
 	Email             string            `json:"email,omitempty"`
 }

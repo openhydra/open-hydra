@@ -33,7 +33,7 @@ func (k *KeystoneAuthPlugin) CreateUser(user *xUserV1.OpenHydraUser) error {
 		Password:      user.Spec.Password,
 		Enabled:       true,
 		OpenhydraUser: user,
-		Options: Options{
+		Options: &Options{
 			IgnorePasswordExpiry:             true,
 			IgnoreChangePasswordUponFirstUse: true,
 			IgnoreLockoutFailureAttempts:     true,
@@ -149,9 +149,32 @@ func (k *KeystoneAuthPlugin) GetUser(name string) (*xUserV1.OpenHydraUser, error
 
 // Update a user
 func (k *KeystoneAuthPlugin) UpdateUser(user *xUserV1.OpenHydraUser) error {
-	// todo: update user
-	// so for openhydra do not support update user, we just delete and recreate it
-	// we leave it blank here
+
+	userId, err := k.GetUserIdFromName(user.ObjectMeta.Name)
+	if err != nil {
+		slog.Error("Failed to get user id", err)
+		return err
+	}
+
+	userPost := &User{
+		Email:    user.Spec.Email,
+		Password: user.Spec.Password,
+	}
+
+	postBody, err := json.Marshal(&struct {
+		User *User `json:"user"`
+	}{User: userPost})
+	if err != nil {
+		slog.Error("Failed to marshal user", err)
+		return err
+	}
+
+	_, _, _, err = k.commentRequestAutoRenewToken(fmt.Sprintf("/v3/users/%s", userId), http.MethodPatch, postBody)
+	if err != nil {
+		slog.Error("Failed to create user", err)
+		return err
+	}
+
 	return nil
 }
 
