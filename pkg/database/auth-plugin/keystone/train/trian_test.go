@@ -34,7 +34,8 @@ var testUserList = UserContainer{[]User{
 		},
 	}},
 	{ID: "test3id", Name: "test3", Password: "test3", Email: "test3@maas.com", Enabled: true},
-	{ID: "adminid", Name: "admin", Password: "admin", Email: "test3@maas.com", Enabled: true},
+	{ID: "adminid", Name: "admin", Password: "admin", Email: "admin@maas.com", Enabled: true},
+	{ID: "test4id", Name: "test4", Password: "test4", Email: "test40@maas.com", Enabled: true},
 },
 }
 
@@ -180,6 +181,41 @@ var testRouter = func(ws *restful.WebService) {
 		}
 		response.WriteHeader(http.StatusOK)
 	}))
+	ws.Route(ws.PATCH("/v3/users/{user_id}").To(func(request *restful.Request, response *restful.Response) {
+		token := request.HeaderParameter("X-Auth-Token")
+		if token != "test-token" {
+			response.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		userID := request.PathParameter("user_id")
+		if userID == "" {
+			response.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		body, err := io.ReadAll(request.Request.Body)
+		if err != nil {
+			response.WriteErrorString(http.StatusInternalServerError, err.Error())
+			return
+		}
+		var userContainer struct {
+			User *User `json:"user"`
+		}
+		err = json.Unmarshal(body, &userContainer)
+		if err != nil {
+			response.WriteErrorString(http.StatusBadRequest, "failed to parse request body")
+			return
+		}
+
+		for index, user := range testUserList.Users {
+			if userID == user.ID {
+				testUserList.Users[index].Password = userContainer.User.Password
+				response.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+		response.WriteHeader(http.StatusNotFound)
+	}))
 }
 
 var _ = Describe("open-hydra-server util test", func() {
@@ -286,6 +322,36 @@ var _ = Describe("open-hydra-server util test", func() {
 			id, err := keystone.GetUserIdFromName("test1")
 			Expect(err).To(BeNil())
 			Expect(id).To(Equal("test1id"))
+		})
+	})
+
+	Describe("UpdateUser test", func() {
+		It("should be expected", func() {
+			serverConfig.AuthDelegateConfig.KeystoneConfig.Endpoint = "http://localhost:20090"
+			stopChan := make(chan struct{}, 1)
+			go util.StartMockServer(20090, testRouter, stopChan)
+			time.Sleep(2 * time.Second)
+			defer close(stopChan)
+			err := keystone.UpdateUser(&xUserV1.OpenHydraUser{
+				ObjectMeta: metaV1.ObjectMeta{
+					Name: "test4",
+				},
+				Spec: xUserV1.OpenHydraUserSpec{
+					Password: "new-password",
+				},
+			})
+			Expect(err).To(BeNil())
+			Expect(testUserList.Users[4].Password).To(Equal("new-password"))
+
+			err = keystone.UpdateUser(&xUserV1.OpenHydraUser{
+				ObjectMeta: metaV1.ObjectMeta{
+					Name: "test99",
+				},
+				Spec: xUserV1.OpenHydraUserSpec{
+					Password: "new-password",
+				},
+			})
+			Expect(err).NotTo(BeNil())
 		})
 	})
 
