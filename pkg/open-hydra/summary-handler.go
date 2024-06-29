@@ -3,6 +3,7 @@ package openhydra
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	coreV1 "k8s.io/api/core/v1"
@@ -44,26 +45,36 @@ func (builder *OpenHydraRouteBuilder) SummaryGetRouteHandler(request *restful.Re
 	gpuAllocated := resource.NewQuantity(0, resource.DecimalSI)
 	podAllocated := 0
 	var totalLine uint16
-	for _, node := range nodeList.Items {
-		gpu := node.Status.Allocatable[coreV1.ResourceName(builder.Config.DefaultGpuDriver)]
-		gpuAllocatable.Add(gpu)
-	}
-	for _, pod := range pods {
-		allocateGPU := false
-		for _, ctr := range pod.Spec.Containers {
-			gpuRequests := ctr.Resources.Requests[coreV1.ResourceName(builder.Config.DefaultGpuDriver)]
-			gpuAllocated.Add(gpuRequests)
-			if gpuRequests.Value() > 0 {
-				allocateGPU = true
+	if len(builder.Config.GpuResourceKeys) == 0 {
+		// warn
+		slog.Warn("gpu resource key is empty, so total gpu number will be 0 and all device use gpu will fall back to default")
+	} else {
+		for _, node := range nodeList.Items {
+			for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
+				gpu := node.Status.Allocatable[coreV1.ResourceName(gpuResourceKey)]
+				gpuAllocatable.Add(gpu)
 			}
 		}
-		if allocateGPU {
-			podAllocated++
-		}
-		if pod.Status.Phase == coreV1.PodPending {
-			totalLine++
+		for _, pod := range pods {
+			allocateGPU := false
+			for _, ctr := range pod.Spec.Containers {
+				for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
+					gpuRequests := ctr.Resources.Requests[coreV1.ResourceName(gpuResourceKey)]
+					gpuAllocated.Add(gpuRequests)
+					if gpuRequests.Value() > 0 {
+						allocateGPU = true
+					}
+				}
+			}
+			if allocateGPU {
+				podAllocated++
+			}
+			if pod.Status.Phase == coreV1.PodPending {
+				totalLine++
+			}
 		}
 	}
+
 	podAllocatable := 0
 	if builder.Config.DefaultGpuPerDevice != 0 {
 		podAllocatable = int(gpuAllocatable.Value() / int64(builder.Config.DefaultGpuPerDevice))

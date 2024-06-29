@@ -84,8 +84,10 @@ type (
 		OpenHydraNamespace            string `json:"open-hydra_namespace" yaml:"open-hydraNamespace"`
 		// should be no default value but fill it in installation script, because it is a runtime value
 		// if not set we won't be able to start gpu pod at all
-		DefaultGpuDriver        string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
-		ServerIP                string `json:"server_ip" yaml:"serverIP"`
+		DefaultGpuDriver string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
+		// gpu resource keys that predefine for open-hydra-server to discover gpu resource
+		GpuResourceKeys         []string `json:"gpu_resource_keys" yaml:"gpuResourceKeys"`
+		ServerIP                string   `json:"server_ip" yaml:"serverIP"`
 		KubeConfig              *rest.Config
 		LeaderElection          *LeaderElection     `json:"leader_election" yaml:"leaderElection,omitempty"`
 		MySqlConfig             *MySqlConfig        `json:"mysql_config" yaml:"mysqlConfig,omitempty"`
@@ -130,6 +132,7 @@ func DefaultConfig() *OpenHydraServerConfig {
 		OpenHydraNamespace:            defaultNamespace,
 		LeaderElection:                DefaultLeaderElection(),
 		DefaultGpuDriver:              "nvidia.com/gpu",
+		GpuResourceKeys:               []string{"nvidia.com/gpu", "amd.com/gpu"},
 		ServerIP:                      "localhost",
 		CpuOverCommitRate:             1, // no over commit for cpu by default,set to 2 cpu request will be divide by 2
 		MemoryOverCommitRate:          1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2

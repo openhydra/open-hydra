@@ -71,6 +71,9 @@ users:
 			Expect(targetConfig.AuthDelegateConfig).To(BeNil())
 			Expect(targetConfig.MySqlConfig.Character).To(Equal("utf8mb4"))
 			Expect(targetConfig.MySqlConfig.Collation).To(Equal("utf8mb4_general_ci"))
+			Expect(len(targetConfig.GpuResourceKeys)).To(Equal(2))
+			Expect(targetConfig.GpuResourceKeys[0]).To(Equal("nvidia.com/gpu"))
+			Expect(targetConfig.GpuResourceKeys[1]).To(Equal("amd.com/gpu"))
 		})
 		AfterEach(func() {
 			_ = util.DeleteFile(configFile)

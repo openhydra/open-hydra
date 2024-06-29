@@ -47,6 +47,9 @@ data:
     datasetBasePath: /mnt/public-dataset
     workspacePath: /mnt/workspace
     defaultGpuDriver: nvidia.com/gpu
+    gpuResourceKeys:
+      - nvidia.com/gpu
+      - amd.com/gpu
     serverIP: "localhost"
     patchResourceNotRelease: true
     disableAuth: true
