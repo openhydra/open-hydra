@@ -197,6 +197,146 @@ var _ = Describe("open-hydra-server handler test", func() {
 	})
 })
 
+var _ = Describe("SumUpGpuResources test", func() {
+	var pods []coreV1.Pod
+	var nodes *coreV1.NodeList
+	var openHydraConfig *config.OpenHydraServerConfig
+	var builder *OpenHydraRouteBuilder
+	var createFakeGpuPod = func(name, namespace, gpuDriver, gpuNumberToUse string) coreV1.Pod {
+		pod := coreV1.Pod{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+			Spec: coreV1.PodSpec{
+				Containers: []coreV1.Container{
+					{
+						Name: "container1",
+					},
+				},
+			},
+		}
+
+		if gpuDriver != "" {
+			pod.Spec.Containers[0].Resources = coreV1.ResourceRequirements{
+				Requests: coreV1.ResourceList{
+					coreV1.ResourceName(gpuDriver): resource.MustParse(gpuNumberToUse),
+				},
+			}
+		}
+		return pod
+	}
+	var createFakeNode = func(name, namespace, gpuDriver, gpuNumberHave string) coreV1.Node {
+		node := coreV1.Node{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		if gpuDriver != "" {
+			node.Status = coreV1.NodeStatus{
+				Allocatable: coreV1.ResourceList{
+					coreV1.ResourceName(gpuDriver): resource.MustParse(gpuNumberHave),
+				},
+			}
+		}
+		return node
+	}
+	BeforeEach(func() {
+		openHydraConfig = config.DefaultConfig()
+		builder = NewOpenHydraRouteBuilder(nil, openHydraConfig, nil, nil, nil)
+		nodes = &coreV1.NodeList{
+			Items: []coreV1.Node{
+				{
+					Status: coreV1.NodeStatus{
+						Allocatable: coreV1.ResourceList{
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+					},
+				},
+				{
+					Status: coreV1.NodeStatus{
+						Allocatable: coreV1.ResourceList{
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+					},
+				},
+			},
+		}
+		pods = []coreV1.Pod{
+			{
+				Spec: coreV1.PodSpec{
+					Containers: []coreV1.Container{
+						{
+							Resources: coreV1.ResourceRequirements{
+								Requests: coreV1.ResourceList{
+									"nvidia.com/gpu": resource.MustParse("1"),
+								},
+							},
+						},
+					},
+				},
+				Status: coreV1.PodStatus{
+					Phase: coreV1.PodPending,
+				},
+			},
+			{
+				Spec: coreV1.PodSpec{
+					Containers: []coreV1.Container{
+						{
+							Resources: coreV1.ResourceRequirements{
+								Requests: coreV1.ResourceList{
+									"nvidia.com/gpu": resource.MustParse("1"),
+								},
+							},
+						},
+					},
+				},
+				Status: coreV1.PodStatus{
+					Phase: coreV1.PodRunning,
+				},
+			},
+		}
+	})
+	It("sum up gpu resources should be expected", func() {
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "", ""))
+		pods = append(pods, createFakeGpuPod("test", "test", "", ""))
+		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("2"))
+		Expect(gpuResources.Spec.GpuAllocated).To(Equal("2"))
+	})
+
+	It("add huawei gpu resources should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
+		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
+	})
+
+	It("add more device should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "muxi")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("6"))
+		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
+	})
+
+	It("add more device without config it should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
+		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
+	})
+})
+
 var _ = Describe("open-hydra-server combineDeviceList test", func() {
 	var pods []coreV1.Pod
 	var services []coreV1.Service

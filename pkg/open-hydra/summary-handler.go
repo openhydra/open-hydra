@@ -38,6 +38,14 @@ func (builder *OpenHydraRouteBuilder) SummaryGetRouteHandler(request *restful.Re
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Error getting pod list: %v", err))
 		return
 	}
+
+	sumUp := builder.SumUpGpuResources(pods, nodeList)
+
+	util.FillObjectGVK(sumUp)
+	_ = response.WriteEntity(sumUp)
+}
+
+func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeList *coreV1.NodeList) *xSumUpV1.SumUp {
 	defRAM := resource.NewQuantity(int64(builder.Config.DefaultRamPerDevice*(1<<20)), resource.BinarySI).String()
 	defCPU := resource.NewMilliQuantity(int64(builder.Config.DefaultCpuPerDevice), resource.DecimalSI).String()
 
@@ -79,7 +87,8 @@ func (builder *OpenHydraRouteBuilder) SummaryGetRouteHandler(request *restful.Re
 	if builder.Config.DefaultGpuPerDevice != 0 {
 		podAllocatable = int(gpuAllocatable.Value() / int64(builder.Config.DefaultGpuPerDevice))
 	}
-	sumUp := xSumUpV1.SumUp{
+
+	return &xSumUpV1.SumUp{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: metav1.Now(),
 		},
@@ -94,6 +103,4 @@ func (builder *OpenHydraRouteBuilder) SummaryGetRouteHandler(request *restful.Re
 			TotalLine:           totalLine,
 		},
 	}
-	util.FillObjectGVK(&sumUp)
-	_ = response.WriteEntity(sumUp)
 }
