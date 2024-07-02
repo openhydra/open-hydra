@@ -52,34 +52,53 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 	gpuAllocatable := resource.NewQuantity(0, resource.DecimalSI)
 	gpuAllocated := resource.NewQuantity(0, resource.DecimalSI)
 	podAllocated := 0
+	gpuResourceCount := map[string]struct {
+		Allocatable *resource.Quantity
+		Allocated   *resource.Quantity
+	}{}
 	var totalLine uint16
 	if len(builder.Config.GpuResourceKeys) == 0 {
 		// warn
 		slog.Warn("gpu resource key is empty, so total gpu number will be 0 and all device use gpu will fall back to default")
 	} else {
+
 		for _, node := range nodeList.Items {
 			for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
 				gpu := node.Status.Allocatable[coreV1.ResourceName(gpuResourceKey)]
-				gpuAllocatable.Add(gpu)
-			}
-		}
-		for _, pod := range pods {
-			allocateGPU := false
-			for _, ctr := range pod.Spec.Containers {
-				for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
-					gpuRequests := ctr.Resources.Requests[coreV1.ResourceName(gpuResourceKey)]
-					gpuAllocated.Add(gpuRequests)
-					if gpuRequests.Value() > 0 {
-						allocateGPU = true
+				if _, found := gpuResourceCount[gpuResourceKey]; found {
+					gpuResourceCount[gpuResourceKey].Allocatable.Add(gpu)
+				} else {
+					gpuResourceCount[gpuResourceKey] = struct {
+						Allocatable *resource.Quantity
+						Allocated   *resource.Quantity
+					}{
+						Allocatable: &gpu,
+						Allocated:   resource.NewQuantity(0, resource.DecimalSI),
 					}
 				}
 			}
-			if allocateGPU {
-				podAllocated++
+		}
+		for _, pod := range pods {
+			for _, ctr := range pod.Spec.Containers {
+				for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
+					gpuRequests := ctr.Resources.Requests[coreV1.ResourceName(gpuResourceKey)]
+					gpuResourceCount[gpuResourceKey].Allocated.Add(gpuRequests)
+				}
 			}
 			if pod.Status.Phase == coreV1.PodPending {
 				totalLine++
 			}
+		}
+	}
+
+	// sum up all gpu device allocation status
+	gpuDriverSumUp := map[string]xSumUpV1.GpuResourceSumUp{}
+	for key, allocationStatus := range gpuResourceCount {
+		gpuAllocatable.Add(*allocationStatus.Allocatable)
+		gpuAllocated.Add(*allocationStatus.Allocated)
+		gpuDriverSumUp[key] = xSumUpV1.GpuResourceSumUp{
+			Allocatable: allocationStatus.Allocatable.Value(),
+			Allocated:   allocationStatus.Allocated.Value(),
 		}
 	}
 
@@ -101,6 +120,7 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 			DefaultRamPerDevice: defRAM,
 			DefaultGpuPerDevice: builder.Config.DefaultGpuPerDevice,
 			TotalLine:           totalLine,
+			GpuResourceSumUp:    gpuDriverSumUp,
 		},
 	}
 }

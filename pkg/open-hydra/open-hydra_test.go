@@ -299,11 +299,21 @@ var _ = Describe("SumUpGpuResources test", func() {
 		}
 	})
 	It("sum up gpu resources should be expected", func() {
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "", ""))
 		pods = append(pods, createFakeGpuPod("test", "test", "", ""))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("2"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("2"))
+	})
+
+	It("sum up gpu resources individually should be expected", func() {
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "", ""))
+		pods = append(pods, createFakeGpuPod("test", "test", "", ""))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocated).To(Equal(int64(0)))
 	})
 
 	It("add huawei gpu resources should be expected", func() {
@@ -313,6 +323,19 @@ var _ = Describe("SumUpGpuResources test", func() {
 		gpuResources := builder.SumUpGpuResources(pods, nodes)
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
+	})
+
+	It("add huawei gpu resources individually should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocated).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocated).To(Equal(int64(2)))
 	})
 
 	It("add more device should be expected", func() {
@@ -326,6 +349,23 @@ var _ = Describe("SumUpGpuResources test", func() {
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
 	})
 
+	It("add more device individually should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "muxi")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocated).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["muxi"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["muxi"].Allocated).To(Equal(int64(0)))
+	})
+
 	It("add more device without config it should be expected", func() {
 		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
@@ -334,6 +374,22 @@ var _ = Describe("SumUpGpuResources test", func() {
 		gpuResources := builder.SumUpGpuResources(pods, nodes)
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
+	})
+
+	It("add more device individually without config it should be expected", func() {
+		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
+		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
+		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
+		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocated).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocatable).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["huawei"].Allocated).To(Equal(int64(2)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["muxi"].Allocatable).To(Equal(int64(0)))
+		Expect(gpuResources.Spec.GpuResourceSumUp["muxi"].Allocated).To(Equal(int64(0)))
 	})
 })
 

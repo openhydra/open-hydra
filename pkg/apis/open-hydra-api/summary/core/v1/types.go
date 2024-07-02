@@ -23,14 +23,20 @@ type SumUpStatus struct {
 }
 
 type SumUpSpec struct {
-	PodAllocatable      int    `json:"podAllocatable"`
-	PodAllocated        int    `json:"podAllocated"`
-	GpuAllocatable      string `json:"gpuAllocatable"`
-	GpuAllocated        string `json:"gpuAllocated"`
-	DefaultCpuPerDevice string `json:"defaultCpuPerDevice"`
-	DefaultRamPerDevice string `json:"defaultRamPerDevice"`
-	DefaultGpuPerDevice uint8  `json:"defaultGpuPerDevice"`
-	TotalLine           uint16 `json:"totalLine"`
+	PodAllocatable      int                         `json:"podAllocatable"`
+	PodAllocated        int                         `json:"podAllocated"`
+	GpuAllocatable      string                      `json:"gpuAllocatable"`
+	GpuAllocated        string                      `json:"gpuAllocated"`
+	DefaultCpuPerDevice string                      `json:"defaultCpuPerDevice"`
+	DefaultRamPerDevice string                      `json:"defaultRamPerDevice"`
+	DefaultGpuPerDevice uint8                       `json:"defaultGpuPerDevice"`
+	TotalLine           uint16                      `json:"totalLine"`
+	GpuResourceSumUp    map[string]GpuResourceSumUp `json:"gpuResourceSumUp"`
+}
+
+type GpuResourceSumUp struct {
+	Allocated   int64 `json:"allocated"`
+	Allocatable int64 `json:"allocatable"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
