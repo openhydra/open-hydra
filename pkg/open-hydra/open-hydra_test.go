@@ -1074,9 +1074,12 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target.Spec.PluginList.Sandboxes["test"].IconName).To(Equal("test1.png"))
 			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].Name).To(Equal("jupyter-lab"))
 			Expect(target.Spec.PluginList.Sandboxes["test"].VolumeMounts[0].MountPath).To(Equal("/root/notebook"))
+			Expect(target.Spec.PluginList.Sandboxes["test"].DisplayTitle).To(Equal("test"))
 			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].GPUImageSet["nvidia.com/gpu"]).To(Equal("nvidia-gpu-image"))
 			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].IconName).To(Equal("test2.png"))
+			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab"].DisplayTitle).To(Equal("jupyter-lab"))
 			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab-lot-ports"].GPUImageSet["nvidia.com/gpu"]).To(Equal("nvidia-gpu-image"))
+			Expect(target.Spec.PluginList.Sandboxes["jupyter-lab-lot-ports"].DisplayTitle).To(Equal("jupyter-lab-lot-ports"))
 		})
 
 		It("open-hydra update setting by teacher should be ok", func() {

@@ -39,6 +39,7 @@ type Sandbox struct {
 	GPUImageSet     map[string]string `json:"gpuImageSet,omitempty"`
 	Command         []string          `json:"command,omitempty"`
 	Args            []string          `json:"args,omitempty"`
+	DisplayTitle    string            `json:"display_title,omitempty"`
 	Description     string            `json:"description,omitempty"`
 	DevelopmentInfo []string          `json:"developmentInfo,omitempty"`
 	Status          string            `json:"status,omitempty"`
