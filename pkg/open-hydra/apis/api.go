@@ -35,17 +35,17 @@ type GpuSet struct {
 
 // +k8s:openapi-gen=true
 type Sandbox struct {
-	CPUImageName    string        `json:"cpuImageName,omitempty"`
-	GPUImageName    string        `json:"gpuImageName,omitempty"`
-	Command         []string      `json:"command,omitempty"`
-	Args            []string      `json:"args,omitempty"`
-	Description     string        `json:"description,omitempty"`
-	DevelopmentInfo []string      `json:"developmentInfo,omitempty"`
-	Status          string        `json:"status,omitempty"`
-	Ports           []uint16      `json:"ports,omitempty"`
-	VolumeMounts    []VolumeMount `json:"volume_mounts,omitempty"`
-	Volumes         []Volume      `json:"volumes,omitempty"`
-	IconName        string        `json:"icon_name,omitempty"`
+	CPUImageName    string            `json:"cpuImageName,omitempty"`
+	GPUImageSet     map[string]string `json:"gpuImageSet,omitempty"`
+	Command         []string          `json:"command,omitempty"`
+	Args            []string          `json:"args,omitempty"`
+	Description     string            `json:"description,omitempty"`
+	DevelopmentInfo []string          `json:"developmentInfo,omitempty"`
+	Status          string            `json:"status,omitempty"`
+	Ports           []uint16          `json:"ports,omitempty"`
+	VolumeMounts    []VolumeMount     `json:"volume_mounts,omitempty"`
+	Volumes         []Volume          `json:"volumes,omitempty"`
+	IconName        string            `json:"icon_name,omitempty"`
 }
 
 // +k8s:openapi-gen=true

@@ -243,8 +243,40 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		// set image with different hardware type if match
 		if gpuSet.Gpu > 0 {
 			// go with gpu image
-			image = plugins.Sandboxes[reqDevice.Spec.SandboxName].GPUImageName
-			slog.Debug(fmt.Sprintf("set image to gpu image '%s'", image))
+			if reqDevice.Spec.GpuDriver == "" {
+				writeHttpResponseAndLogError(response, http.StatusBadRequest, "gpu driver is empty")
+				return
+			}
+
+			// ensure gpu is allowed
+			// should be in config
+			gpuIsAllowed := false
+			for _, gpuAllowed := range builder.Config.GpuResourceKeys {
+				if gpuAllowed == reqDevice.Spec.GpuDriver {
+					gpuIsAllowed = true
+					break
+				}
+			}
+			if !gpuIsAllowed {
+				writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("gpu driver %s is not allowed", reqDevice.Spec.GpuDriver))
+				return
+			}
+
+			// ensure key is found in GPUImageSet
+			// we do not put any default fall back option here which is on purpose
+			// because different gpu must go with different image especially for none cuda compatible gpu
+			if _, found := plugins.Sandboxes[reqDevice.Spec.SandboxName].GPUImageSet[reqDevice.Spec.GpuDriver]; !found {
+				writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("gpu image %s not found in sandbox %s", reqDevice.Spec.GpuDriver, reqDevice.Spec.SandboxName))
+				return
+			}
+
+			if plugins.Sandboxes[reqDevice.Spec.SandboxName].GPUImageSet[reqDevice.Spec.GpuDriver] == "" {
+				writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("gpu image %s is empty in sandbox %s", reqDevice.Spec.GpuDriver, reqDevice.Spec.SandboxName))
+				return
+			}
+
+			image = plugins.Sandboxes[reqDevice.Spec.SandboxName].GPUImageSet[reqDevice.Spec.GpuDriver]
+			slog.Debug(fmt.Sprintf("set image to gpu image '%s' with driver name '%s'", image, reqDevice.Spec.GpuDriver))
 		} else {
 			// go with cpu image
 			image = plugins.Sandboxes[reqDevice.Spec.SandboxName].CPUImageName

@@ -178,7 +178,10 @@ data:
         "sandboxes": {
             "xedu": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
-                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                "gpuImageSet": {
+                    "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
+                    "amd.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan"
+                },
                 "icon_name": "jupyter-lab.png",
                 "command": [],
                 "args": [],
@@ -247,7 +250,10 @@ data:
             },
             "keras": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
-                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                "gpuImageSet": {
+                    "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
+                    "amd.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab"
+                },
                 "icon_name": "keras.png",
                 "command": [],
                 "args": [],
@@ -303,7 +309,10 @@ data:
             },
             "PaddlePaddle": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-jlab",
-                "gpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                "gpuImageSet": {
+                    "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab",
+                    "amd.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/paddle:2.6.0-gpu-cuda12.0-cudnn8.9-trt8.6-jlab"
+                },
                 "icon_name": "PaddlePaddle.png",
                 "command": [],
                 "args": [],

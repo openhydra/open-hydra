@@ -120,7 +120,10 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 			"plugins": `{"sandboxes":{
 				"test": {
 					"cpuImageName": "test",
-					"gpuImageName": "test",
+					"gpuImageSet": {
+						"nvidia.com/gpu": "nvidia-gpu-image",
+						"amd.com/gpu": ""
+					},
 					"icon_name": "test1.png",
 					"command": ["test"],
 					"description": "test",
@@ -149,7 +152,10 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				},
 				"jupyter-lab": {
 					"cpuImageName": "jupyter-lab-test",
-					"gpuImageName": "jupyter-lab-test",
+					"gpuImageSet": {
+						"nvidia.com/gpu": "nvidia-gpu-image",
+						"amd.com/gpu": ""
+					},
 					"icon_name": "test2.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
@@ -178,7 +184,10 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				},
 				"jupyter-lab-lot-ports": {
 					"cpuImageName": "jupyter-lab-test",
-					"gpuImageName": "jupyter-lab-test",
+					"gpuImageSet": {
+						"nvidia.com/gpu": "nvidia-gpu-image",
+						"amd.com/gpu": ""
+					},
 					"icon_name": "test3.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
@@ -210,7 +219,10 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 				},
 				"jupyter-lab-not-ports": {
 					"cpuImageName": "jupyter-lab-test",
-					"gpuImageName": "jupyter-lab-test",
+					"gpuImageSet": {
+						"nvidia.com/gpu": "nvidia-gpu-image",
+						"amd.com/gpu": ""
+					},
 					"icon_name": "test4.png",
 					"command": ["jupyter-lab-test"],
 					"description": "jupyter-lab-test",
