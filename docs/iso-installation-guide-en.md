@@ -196,7 +196,7 @@ open-hydra           reverse-proxy-6b4d55d79-77s65                              
 ## Access the dashboard
 
 * Open browser and enter the address `http://[ip]:30001`
-  * login with admin/openhydra
+  * login with admin/99cloud
 
 ## Screen freezed issue
 
