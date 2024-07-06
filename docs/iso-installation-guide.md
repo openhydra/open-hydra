@@ -196,7 +196,7 @@ open-hydra           reverse-proxy-6b4d55d79-77s65                              
 ## 访问 dashboard
 
 * 打开浏览器输入地址 `http://[ip]:30001`
-  * login with admin/openhydra
+  * login with admin/99cloud
 
 ## 屏幕唤醒黑屏的问题
 
