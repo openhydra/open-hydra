@@ -15323,6 +15323,18 @@ func schema_open_hydra_api_course_core_v1_CourseSpec(ref common.ReferenceCallbac
 							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
+					"level": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"sandboxName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"lastUpdate"},
 			},
@@ -16274,6 +16286,13 @@ func schema_open_hydra_pkg_open_hydra_apis_PluginList(ref common.ReferenceCallba
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"defaultSandbox": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
 					"sandboxes": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
@@ -16289,7 +16308,7 @@ func schema_open_hydra_pkg_open_hydra_apis_PluginList(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"sandboxes"},
+				Required: []string{"defaultSandbox", "sandboxes"},
 			},
 		},
 		Dependencies: []string{
@@ -16309,10 +16328,19 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
-					"gpuImageName": {
+					"gpuImageSet": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 					"command": {
@@ -16341,6 +16369,12 @@ func schema_open_hydra_pkg_open_hydra_apis_Sandbox(ref common.ReferenceCallback)
 									},
 								},
 							},
+						},
+					},
+					"display_title": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"description": {

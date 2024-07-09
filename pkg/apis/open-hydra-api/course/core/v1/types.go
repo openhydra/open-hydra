@@ -26,6 +26,8 @@ type CourseSpec struct {
 	CreatedBy   string      `json:"createdBy,omitempty"`
 	Description string      `json:"description,omitempty"`
 	LastUpdate  metav1.Time `json:"lastUpdate"`
+	Level       int         `json:"level,omitempty"`
+	SandboxName string      `json:"sandboxName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

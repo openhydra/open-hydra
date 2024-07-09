@@ -51,5 +51,6 @@ type Sandbox struct {
 
 // +k8s:openapi-gen=true
 type PluginList struct {
-	Sandboxes map[string]Sandbox `json:"sandboxes"`
+	DefaultSandbox string             `json:"defaultSandbox"`
+	Sandboxes      map[string]Sandbox `json:"sandboxes"`
 }

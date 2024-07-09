@@ -188,6 +188,7 @@ apiVersion: v1
 data:
   plugins: |
     {
+        "defaultSandbox": "xedu",
         "sandboxes": {
             "xedu": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",

@@ -117,7 +117,9 @@ func (f *Fake) DeleteUserPod(label, namespace string, client *kubernetes.Clients
 func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error) {
 	return &coreV1.ConfigMap{
 		Data: map[string]string{
-			"plugins": `{"sandboxes":{
+			"plugins": `{
+			"defaultSandbox": "test",
+			"sandboxes":{
 				"test": {
 					"display_title": "test",
 					"cpuImageName": "test",

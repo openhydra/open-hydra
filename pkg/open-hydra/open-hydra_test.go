@@ -747,7 +747,10 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		}
 		container.Add(builder.RootWS)
 	}
-	var uploadResource = func(url, testZipBaseDir string) {
+	var uploadResource = func(url, testZipBaseDir string, extraData map[string]string, statusExpected int) {
+		if statusExpected == 0 {
+			statusExpected = http.StatusOK
+		}
 		err := util.CreateDirIfNotExists("/tmp/test")
 		Expect(err).To(BeNil())
 		err = util.CreateDirIfNotExists("/tmp/test/test1")
@@ -762,14 +765,17 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		Expect(err).To(BeNil())
 		err = util.ZipDir("/tmp/test", "/tmp/test.zip")
 		Expect(err).To(BeNil())
-		bodyTxt := map[string]string{}
+		bodyTxt := extraData
 		bodyTxt["name"] = "unit-test"
 		bodyTxt["description"] = "unit-test"
 		body, contentType, err := createMultiPartBody(bodyTxt, "/tmp/test.zip")
 		//body, contentType, err := createMultiPartBody(bodyTxt, "/tmp/ds1.zip")
 		Expect(err).To(BeNil())
 		_, r2 := callApi(http.MethodPost, url, createTokenValue(teacher, map[string]string{"Content-Type": contentType}), body)
-		Expect(r2.Code).To(Equal(http.StatusCreated))
+		Expect(r2.Code).To(Equal(statusExpected))
+		if statusExpected != http.StatusOK {
+			return
+		}
 		targetPath := path.Join(testZipBaseDir, "unit-test", "test", "test1", "test.txt")
 		data, err := util.ReadTxtFile(targetPath)
 		Expect(err).To(BeNil())
@@ -1108,7 +1114,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("create dataset by teacher should be ok", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath)
+			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 
 			// list it
 			_, r2 := callApi(http.MethodGet, openHydraDatasetsURL, createTokenValue(teacher, nil), nil)
@@ -1136,7 +1142,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("dataset will reject students", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath)
+			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodGet, openHydraDatasetsURL, createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			_, r2 = callApi(http.MethodGet, openHydraDatasetsURL+"/unit-test", createTokenValue(student, nil), nil)
@@ -1146,7 +1152,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("dataset delete by teacher should be ok", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath)
+			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodDelete, openHydraDatasetsURL+"/unit-test", createTokenValue(teacher, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
 			_, err := os.Stat(path.Join(openHydraConfig.PublicDatasetBasePath, "unit-test"))
@@ -1164,7 +1170,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("create course by teacher should be ok", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath)
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 
 			// list it
 			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(teacher, nil), nil)
@@ -1191,8 +1197,87 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
 		})
 
+		It("create course by teacher failed due to level not parsable", func() {
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+				"level": "funny",
+			}, http.StatusBadRequest)
+			util.DeleteDirs("/tmp/test")
+			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+		})
+
+		It("create course by teacher failed due to sandbox not pre-config well", func() {
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+				"sandboxName": "sandbox-not-exists",
+			}, http.StatusBadRequest)
+			util.DeleteDirs("/tmp/test")
+			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+		})
+
+		It("create course by teacher should be ok with level and sandbox proper returned", func() {
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+				"level":       "1",
+				"sandboxName": "jupyter-lab",
+			}, http.StatusCreated)
+
+			// list it
+			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(teacher, nil), nil)
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var target xCourseV1.CourseList
+			result, err := io.ReadAll(r2.Body)
+			Expect(err).To(BeNil())
+			err = json.Unmarshal(result, &target)
+			Expect(err).To(BeNil())
+			Expect(len(target.Items)).To(Equal(1))
+
+			// get it
+			_, r2 = callApi(http.MethodGet, openHydraCoursesURL+"/unit-test", createTokenValue(teacher, nil), nil)
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var target2 xCourseV1.Course
+			result, err = io.ReadAll(r2.Body)
+			Expect(err).To(BeNil())
+			err = json.Unmarshal(result, &target2)
+			Expect(err).To(BeNil())
+			Expect(target2.Name).To(Equal("unit-test"))
+			Expect(target2.Spec.Description).To(Equal("unit-test"))
+			Expect(target2.Spec.Level).To(Equal(1))
+			Expect(target2.Spec.SandboxName).To(Equal("jupyter-lab"))
+
+			util.DeleteDirs("/tmp/test")
+			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+		})
+
+		It("create course by teacher should be ok with level and sandbox default value is returned", func() {
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
+
+			// list it
+			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(teacher, nil), nil)
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var target xCourseV1.CourseList
+			result, err := io.ReadAll(r2.Body)
+			Expect(err).To(BeNil())
+			err = json.Unmarshal(result, &target)
+			Expect(err).To(BeNil())
+			Expect(len(target.Items)).To(Equal(1))
+
+			// get it
+			_, r2 = callApi(http.MethodGet, openHydraCoursesURL+"/unit-test", createTokenValue(teacher, nil), nil)
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var target2 xCourseV1.Course
+			result, err = io.ReadAll(r2.Body)
+			Expect(err).To(BeNil())
+			err = json.Unmarshal(result, &target2)
+			Expect(err).To(BeNil())
+			Expect(target2.Name).To(Equal("unit-test"))
+			Expect(target2.Spec.Description).To(Equal("unit-test"))
+			Expect(target2.Spec.Level).To(Equal(0))
+			Expect(target2.Spec.SandboxName).To(Equal("test"))
+
+			util.DeleteDirs("/tmp/test")
+			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+		})
+
 		It("course will reject students", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath)
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			_, r2 = callApi(http.MethodGet, openHydraCoursesURL+"/unit-test", createTokenValue(student, nil), nil)
@@ -1202,7 +1287,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("course delete by teacher should be ok", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath)
+			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodDelete, openHydraCoursesURL+"/unit-test", createTokenValue(teacher, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
 			_, err := os.Stat(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -79,9 +80,46 @@ func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.
 	description := request.Request.PostFormValue("description")
 	createdBy := request.Request.PostFormValue("createdBy")
 	name := request.Request.PostFormValue("name")
+	levelRaw := request.Request.PostFormValue("level")
+	sandboxName := request.Request.PostFormValue("sandboxName")
 	if name == "" {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest, "Course name is empty")
 		return
+	}
+
+	// we need to get config map openhydra-plugin first
+	// TODO: we should use informer to cache config map instead of query api-server directly for performance
+	pluginConfigMap, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
+		return
+	}
+
+	// parse to plugin list
+	plugins, err := ParseJsonToPluginList(pluginConfigMap.Data["plugins"])
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal json: %v", err))
+		return
+	}
+
+	if sandboxName == "" {
+		sandboxName = plugins.DefaultSandbox
+	} else {
+		if _, found := plugins.Sandboxes[sandboxName]; !found {
+			writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("Sandbox %s not found", sandboxName))
+			return
+		}
+	}
+
+	level := 0
+	if levelRaw != "" {
+		// try parse to int
+		level, err = strconv.Atoi(levelRaw)
+		if err != nil {
+			writeHttpResponseAndLogError(response, http.StatusBadRequest,
+				fmt.Sprintf("Failed to parse level: %v", err.Error()))
+			return
+		}
 	}
 
 	file, fileHeader, err := request.Request.FormFile("file")
@@ -125,6 +163,8 @@ func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.
 		Spec: xCourseV1.CourseSpec{
 			Description: description,
 			CreatedBy:   createdBy,
+			Level:       level,
+			SandboxName: sandboxName,
 		},
 	}
 
