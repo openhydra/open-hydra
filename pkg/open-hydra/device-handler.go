@@ -244,8 +244,11 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		if gpuSet.Gpu > 0 {
 			// go with gpu image
 			if reqDevice.Spec.GpuDriver == "" {
-				writeHttpResponseAndLogError(response, http.StatusBadRequest, "gpu driver is empty")
-				return
+				if builder.Config.DefaultGpuDriver == "" {
+					writeHttpResponseAndLogError(response, http.StatusBadRequest, "both gpu driver and DefaultGpuDriver are empty")
+					return
+				}
+				reqDevice.Spec.GpuDriver = builder.Config.DefaultGpuDriver
 			}
 
 			// ensure gpu is allowed
