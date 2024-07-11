@@ -2,6 +2,7 @@ package openhydra
 
 import (
 	"archive/zip"
+	"bytes"
 	stdErr "errors"
 	"fmt"
 	"io"
@@ -18,6 +19,8 @@ import (
 	xDatasetV1 "open-hydra/pkg/apis/open-hydra-api/dataset/core/v1"
 
 	"github.com/emicklei/go-restful/v3"
+	simpleChinese "golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 /*
@@ -255,7 +258,14 @@ func unzipTo(src io.ReaderAt, size int64, destPath string) error {
 	}
 	defer os.RemoveAll(tempPath)
 	for _, file := range reader.File {
-		err := writeZipFile(filepath.Join(tempPath, file.Name), file)
+		// for chinese file name that compressed on windows might cause name is garbled
+		// to fix this we have to always convert file name to format B18030
+		decodedFileName, err := decodeGB18030ToString([]byte(file.Name))
+		if err != nil {
+			return errors.NewBadRequest(fmt.Sprintf("Failed decoded file name '%s' to format GB18030 due to error: %v", file.Name, err.Error()))
+		}
+
+		err = writeZipFile(filepath.Join(tempPath, decodedFileName), file)
 		if err != nil {
 			return errors.NewInternalError(err)
 		}
@@ -291,4 +301,13 @@ func writeZipFile(destPah string, zipFile *zip.File) error {
 	defer zh.Close()
 	_, err = io.Copy(fh, zh)
 	return err
+}
+
+func decodeGB18030ToString(data []byte) (string, error) {
+	reader := transform.NewReader(bytes.NewReader(data), simpleChinese.GB18030.NewDecoder())
+	decoded, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	return string(decoded), nil
 }
