@@ -59,46 +59,46 @@ type (
 	OpenHydraServerConfig struct {
 		// in case of we want to control total pod number in cluster
 		// -1 not limit pod allocatable will be count by resource wise
-		PodAllocatableLimit int64 `json:"pod_allocatable_limit" yaml:"podAllocatableLimit"`
+		PodAllocatableLimit int64 `json:"pod_allocatable_limit,omitempty" yaml:"podAllocatableLimit,omitempty"`
 		// default = 2000
 		// note unit is m
-		DefaultCpuPerDevice uint64 `json:"default_cpu_per_device" yaml:"defaultCpuPerDevice"`
+		DefaultCpuPerDevice uint64 `json:"default_cpu_per_device,omitempty" yaml:"defaultCpuPerDevice,omitempty"`
 		// default = 8192
 		// note unit is Mi
-		DefaultRamPerDevice uint64 `json:"default_ram_per_device" yaml:"defaultRamPerDevice"`
+		DefaultRamPerDevice uint64 `json:"default_ram_per_device,omitempty" yaml:"defaultRamPerDevice,omitempty"`
 		// default = 0
-		DefaultGpuPerDevice uint8 `json:"default_gpu_per_device" yaml:"defaultGpuPerDevice"`
+		DefaultGpuPerDevice uint8 `json:"default_gpu_per_device,omitempty" yaml:"defaultGpuPerDevice,omitempty"`
 		// default = "/open-hydra/public-dataset"
 		// all dataset upload by user will be store in this path
-		PublicDatasetBasePath string `json:"dataset_base_path" yaml:"datasetBasePath"`
-		PublicCourseBasePath  string `json:"course_base_path" yaml:"courseBasePath"`
-		PublicDatasetMaxSize  int64  `json:"dataset_max_size" yaml:"datasetMaxSize"`
-		PublicCourseMaxSize   int64  `json:"course_max_size" yaml:"courseMaxSize"`
+		PublicDatasetBasePath string `json:"dataset_base_path,omitempty" yaml:"datasetBasePath,omitempty"`
+		PublicCourseBasePath  string `json:"course_base_path,omitempty" yaml:"courseBasePath,omitempty"`
+		PublicDatasetMaxSize  int64  `json:"dataset_max_size,omitempty" yaml:"datasetMaxSize,omitempty"`
+		PublicCourseMaxSize   int64  `json:"course_max_size,omitempty" yaml:"courseMaxSize,omitempty"`
 		// default = "hostpath", hostpath or nfs
 		// hostpath: open-hydra-server will use hostpath to mount dataset most likely for aio server or test
 		// nfs: open-hydra-server will use nfs to mount dataset most likely for production
-		PublicDatasetVolumeType string `json:"dataset_volume_type" yaml:"datasetVolumeType"`
+		PublicDatasetVolumeType string `json:"dataset_volume_type,omitempty" yaml:"datasetVolumeType,omitempty"`
 		// default = "/root/public-dataset"
-		PublicDatasetStudentMountPath string `json:"dataset_student_mount_path" yaml:"datasetStudentMountPath"`
-		PublicCourseStudentMountPath  string `json:"course_student_mount_path" yaml:"courseStudentMountPath"`
+		PublicDatasetStudentMountPath string `json:"dataset_student_mount_path,omitempty" yaml:"datasetStudentMountPath,omitempty"`
+		PublicCourseStudentMountPath  string `json:"course_student_mount_path,omitempty" yaml:"courseStudentMountPath,omitempty"`
 		// should be no default value but fill it in installation script, because it is a runtime value
 		// if not set we won't be able to start gpu pod at all
-		DefaultGpuDriver string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
+		DefaultGpuDriver string `json:"default_gpu_driver,omitempty" yaml:"defaultGpuDriver,omitempty"`
 		// gpu resource keys that predefine for open-hydra-server to discover gpu resource
-		GpuResourceKeys         []string `json:"gpu_resource_keys" yaml:"gpuResourceKeys"`
+		GpuResourceKeys         []string `json:"gpu_resource_keys,omitempty" yaml:"gpuResourceKeys,omitempty"`
 		ServerIP                string   `json:"server_ip" yaml:"serverIP"`
 		KubeConfig              *rest.Config
-		LeaderElection          *LeaderElection     `json:"leader_election" yaml:"leaderElection,omitempty"`
-		MySqlConfig             *MySqlConfig        `json:"mysql_config" yaml:"mysqlConfig,omitempty"`
-		EtcdConfig              *EtcdConfig         `json:"etcd_config" yaml:"etcdConfig,omitempty"`
-		DBType                  string              `json:"db_type" yaml:"dbType"`
+		LeaderElection          *LeaderElection     `json:"leader_election,omitempty" yaml:"leaderElection,omitempty"`
+		MySqlConfig             *MySqlConfig        `json:"mysql_config,omitempty" yaml:"mysqlConfig,omitempty"`
+		EtcdConfig              *EtcdConfig         `json:"etcd_config,omitempty" yaml:"etcdConfig,omitempty"`
+		DBType                  string              `json:"db_type,omitempty" yaml:"dbType,omitempty"`
 		DisableAuth             bool                `json:"disable_auth" yaml:"disableAuth"`
-		PatchResourceNotRelease bool                `json:"patch_resource_not_release" yaml:"patchResourceNotRelease"`
-		CpuOverCommitRate       uint8               `json:"cpu_over_commit_rate" yaml:"cpuOverCommitRate"`
-		MemoryOverCommitRate    uint8               `json:"memory_over_commit_rate" yaml:"memoryOverCommitRate"`
-		AuthDelegateConfig      *AuthDelegateConfig `json:"auth_delegate_config" yaml:"authDelegateConfig,omitempty"`
-		MaximumPortsPerSandbox  uint8               `json:"maximum_ports_per_sandbox" yaml:"maximumPortsPerSandbox"`
-		WorkspacePath           string              `json:"workspace_path" yaml:"workspacePath"`
+		PatchResourceNotRelease bool                `json:"patch_resource_not_release,omitempty" yaml:"patchResourceNotRelease,omitempty"`
+		CpuOverCommitRate       uint8               `json:"cpu_over_commit_rate,omitempty" yaml:"cpuOverCommitRate,omitempty"`
+		MemoryOverCommitRate    uint8               `json:"memory_over_commit_rate,omitempty" yaml:"memoryOverCommitRate,omitempty"`
+		AuthDelegateConfig      *AuthDelegateConfig `json:"auth_delegate_config,omitempty" yaml:"authDelegateConfig,omitempty"`
+		MaximumPortsPerSandbox  uint8               `json:"maximum_ports_per_sandbox,omitempty" yaml:"maximumPortsPerSandbox,omitempty"`
+		WorkspacePath           string              `json:"workspace_path,omitempty" yaml:"workspacePath,omitempty"`
 	}
 )
 
@@ -140,36 +140,36 @@ func DefaultConfig() *OpenHydraServerConfig {
 }
 
 type EtcdConfig struct {
-	Endpoints []string `json:"endpoints" yaml:"endpoints"`
-	CAFile    string   `json:"ca_file" yaml:"caFile"`
-	CertFile  string   `json:"cert_file" yaml:"certFile"`
-	KeyFile   string   `json:"key_file" yaml:"keyFile"`
+	Endpoints []string `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
+	CAFile    string   `json:"ca_file,omitempty" yaml:"caFile,omitempty"`
+	CertFile  string   `json:"cert_file,omitempty" yaml:"certFile,omitempty"`
+	KeyFile   string   `json:"key_file,omitempty" yaml:"keyFile,omitempty"`
 }
 
 type MySqlConfig struct {
-	Address      string `json:"address" yaml:"address"`
-	Port         uint16 `json:"port" yaml:"port"`
-	Username     string `json:"username" yaml:"username"`
-	Password     string `json:"password" yaml:"password"`
-	DataBaseName string `json:"database_name" yaml:"databaseName"`
-	Protocol     string `json:"protocol" yaml:"protocol"`
-	Character    string `json:"character" yaml:"character"`
-	Collation    string `json:"collation" yaml:"collation"`
+	Address      string `json:"address,omitempty" yaml:"address,omitempty"`
+	Port         uint16 `json:"port,omitempty" yaml:"port,omitempty"`
+	Username     string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password     string `json:"password,omitempty" yaml:"password,omitempty"`
+	DataBaseName string `json:"database_name,omitempty" yaml:"databaseName,omitempty"`
+	Protocol     string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Character    string `json:"character,omitempty" yaml:"character,omitempty"`
+	Collation    string `json:"collation,omitempty" yaml:"collation,omitempty"`
 }
 
 type AuthDelegateConfig struct {
 	// if KeystoneConfig is set to nil then auth plugin will fall backup to database auth
-	KeystoneConfig *KeystoneConfig `json:"keystone_config" yaml:"keystoneConfig"`
+	KeystoneConfig *KeystoneConfig `json:"keystone_config,omitempty" yaml:"keystoneConfig,omitempty"`
 }
 
 type KeystoneConfig struct {
-	Endpoint           string `json:"endpoint" yaml:"endpoint"`
-	Username           string `json:"username" yaml:"username"`
-	Password           string `json:"password" yaml:"password"`
-	DomainId           string `json:"domain_id" yaml:"domainId"`
-	ProjectId          string `json:"project_id" yaml:"projectId"`
-	TokenKeyInResponse string `json:"token_key_in_response" yaml:"tokenKeyInResponse"`
-	TokenKeyInRequest  string `json:"token_key_in_request" yaml:"tokenKeyInRequest"`
+	Endpoint           string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	Username           string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password           string `json:"password,omitempty" yaml:"password,omitempty"`
+	DomainId           string `json:"domain_id,omitempty" yaml:"domainId,omitempty"`
+	ProjectId          string `json:"project_id,omitempty" yaml:"projectId,omitempty"`
+	TokenKeyInResponse string `json:"token_key_in_response,omitempty" yaml:"tokenKeyInResponse,omitempty"`
+	TokenKeyInRequest  string `json:"token_key_in_request,omitempty" yaml:"tokenKeyInRequest,omitempty"`
 }
 
 func DefaultEtcdConfig() *EtcdConfig {

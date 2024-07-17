@@ -45,6 +45,7 @@ data:
     defaultRamPerDevice: 8192
     defaultGpuPerDevice: 0
     datasetBasePath: /mnt/public-dataset
+    courseBasePath: /mnt/public-course
     workspacePath: /mnt/workspace
     defaultGpuDriver: nvidia.com/gpu
     gpuResourceKeys:

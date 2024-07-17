@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"open-hydra/pkg/open-hydra/apis"
@@ -180,7 +181,17 @@ func (help *DefaultHelper) CreateDeployment(deployParameter *DeploymentParameter
 
 	deployment.Spec.Template.Spec.Affinity = deployParameter.Affinity
 
-	_, err := deployParameter.Client.AppsV1().Deployments(deployParameter.Namespace).Create(context.TODO(), deployment, metaV1.CreateOptions{})
+	debugDeploy, err := json.Marshal(deployment)
+	if err != nil {
+		slog.Error("failed to marshal deployment", "error", err)
+		return err
+	}
+
+	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`")
+	slog.Info("deployment", "deployment", string(debugDeploy))
+	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`")
+
+	_, err = deployParameter.Client.AppsV1().Deployments(deployParameter.Namespace).Create(context.TODO(), deployment, metaV1.CreateOptions{})
 	if err != nil {
 		return err
 	}
