@@ -38,14 +38,21 @@ type IOpenHydraK8sHelper interface {
 	GetUserService(label, namespace string, client *kubernetes.Clientset) (*coreV1.Service, error)
 	DeleteUserReplicaSet(label, namespace string, client *kubernetes.Clientset) error
 	DeleteUserPod(label, namespace string, client *kubernetes.Clientset) error
-	GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error)
+	GetConfigMap(name, namespace string) (*coreV1.ConfigMap, error)
+	UpdateConfigMap(name, namespace string, data map[string]string) error
+	RunInformers(stopChan <-chan struct{})
 }
 
-func NewDefaultK8sHelper() IOpenHydraK8sHelper {
-	return &DefaultHelper{}
+func NewDefaultK8sHelper(clientSet *kubernetes.Clientset, stopChan <-chan struct{}) IOpenHydraK8sHelper {
+	helper := &DefaultHelper{
+		clientSet: clientSet,
+	}
+	helper.InitInformer()
+	helper.RunInformers(stopChan)
+	return helper
 }
 
-func NewDefaultK8sHelperWithFake() IOpenHydraK8sHelper {
+func NewDefaultK8sHelperWithFake() *Fake {
 	fake := &Fake{}
 	fake.Init()
 	return fake

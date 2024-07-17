@@ -64,7 +64,7 @@ func RunApiServer(recommendOption *option.Options, config *config.OpenHydraServe
 
 	gApiServer, err := completedConfig.New("open-hydra api-server", genericApiServer.NewEmptyDelegate())
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to create genericApiServer: %v", err))
+		slog.Error("Failed to create genericApiServer", "error", err)
 		return err
 
 	}
@@ -80,9 +80,9 @@ func RunApiServer(recommendOption *option.Options, config *config.OpenHydraServe
 	// register the discovery service
 	registerDiscoveryService(gApiServer)
 	// register the api resource
-	err = registerApiResource(gApiServer, config)
+	err = registerApiResource(gApiServer, config, stopChan)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to register api resource: %v", err))
+		slog.Error("Failed to register api resource", "error", err)
 		return err
 	}
 

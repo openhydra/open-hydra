@@ -21,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const OpenhydraNamespace = "open-hydra"
+
 type HttpErrMsg struct {
 	Error string `json:"errMsg"`
 }

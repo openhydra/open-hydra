@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"open-hydra/cmd/open-hydra-server/app/config"
 	xDeviceV1 "open-hydra/pkg/apis/open-hydra-api/device/core/v1"
 	v1 "open-hydra/pkg/apis/open-hydra-api/user/core/v1"
 	envApi "open-hydra/pkg/open-hydra/apis"
@@ -27,6 +28,14 @@ func (builder *OpenHydraRouteBuilder) AddDeviceListRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) DeviceListRouteHandler(request *restful.Request, response *restful.Response) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	result := xDeviceV1.DeviceList{}
 	result.Kind = "List"
 	result.APIVersion = "v1"
@@ -37,18 +46,18 @@ func (builder *OpenHydraRouteBuilder) DeviceListRouteHandler(request *restful.Re
 		return
 	}
 
-	allUserDevice, err := builder.k8sHelper.ListPod(builder.Config.OpenHydraNamespace, builder.kubeClient)
+	allUserDevice, err := builder.k8sHelper.ListPod("open-hydra", builder.kubeClient)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	allUserService, err := builder.k8sHelper.ListService(builder.Config.OpenHydraNamespace, builder.kubeClient)
+	allUserService, err := builder.k8sHelper.ListService(OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		slog.Warn("Failed to list service", err)
 	}
 
-	result.Items = combineDeviceList(allUserDevice, allUserService, users, builder.Config)
+	result.Items = combineDeviceList(allUserDevice, allUserService, users, serverConfig)
 
 	response.WriteEntity(result)
 }
@@ -70,8 +79,15 @@ func (builder *OpenHydraRouteBuilder) DeviceGetRouteHandler(request *restful.Req
 		return
 	}
 
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	username := request.PathParameter("username")
-	if !builder.Config.DisableAuth {
+	if !serverConfig.DisableAuth {
 		reqUser := request.HeaderParameter(openHydraHeaderUser)
 		reqRole := request.HeaderParameter(openHydraHeaderRole)
 		if reqUser == "" || reqRole == "" {
@@ -96,13 +112,13 @@ func (builder *OpenHydraRouteBuilder) DeviceGetRouteHandler(request *restful.Req
 
 	userLabel := fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username)
 
-	device, err := builder.k8sHelper.GetUserPods(userLabel, builder.Config.OpenHydraNamespace, builder.kubeClient)
+	device, err := builder.k8sHelper.GetUserPods(userLabel, OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	service, err := builder.k8sHelper.GetUserService(userLabel, builder.Config.OpenHydraNamespace, builder.kubeClient)
+	service, err := builder.k8sHelper.GetUserService(userLabel, OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		slog.Warn("Failed to get user service", err)
 	}
@@ -113,7 +129,7 @@ func (builder *OpenHydraRouteBuilder) DeviceGetRouteHandler(request *restful.Req
 		services = append(services, *service)
 	}
 
-	result := combineDeviceList(device, services, v1.OpenHydraUserList{Items: []v1.OpenHydraUser{*user}}, builder.Config)
+	result := combineDeviceList(device, services, v1.OpenHydraUserList{Items: []v1.OpenHydraUser{*user}}, serverConfig)
 	if len(result) == 0 {
 		writeHttpResponseAndLogError(response, http.StatusNotFound, "not found")
 		return
@@ -151,7 +167,14 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	if !builder.Config.DisableAuth {
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
+	if !serverConfig.DisableAuth {
 		reqUser := request.HeaderParameter(openHydraHeaderUser)
 		reqRole := request.HeaderParameter(openHydraHeaderRole)
 		if reqUser == "" || reqRole == "" {
@@ -181,7 +204,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 	}
 
 	// check if device already exists
-	pod, err := builder.k8sHelper.ListPodWithLabel(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, reqDevice.Spec.OpenHydraUsername), builder.Config.OpenHydraNamespace, builder.kubeClient)
+	pod, err := builder.k8sHelper.ListPodWithLabel(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, reqDevice.Spec.OpenHydraUsername), OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
@@ -192,11 +215,11 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	gpuSet := builder.BuildGpu(reqDevice)
+	gpuSet := builder.BuildGpu(reqDevice, serverConfig)
 
 	// we need to get config map openhydra-plugin first
 	// TODO: we should use informer to cache config map instead of query api-server directly for performance
-	pluginConfigMap, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	pluginConfigMap, err := builder.k8sHelper.GetConfigMap("openhydra-plugin", OpenhydraNamespace)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
 		return
@@ -219,7 +242,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("sandbox %s not found, please ensure sandbox is proper config", reqDevice.Spec.SandboxName))
 		return
 	} else {
-		if len(plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports) > int(builder.Config.MaximumPortsPerSandbox) {
+		if len(plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports) > int(serverConfig.MaximumPortsPerSandbox) {
 			// if sandbox exceed maximum ports limit then return error
 			writeHttpResponseAndLogError(response, http.StatusBadRequest, fmt.Sprintf("sandbox %s exceed maximum ports limit", reqDevice.Spec.SandboxName))
 			return
@@ -228,7 +251,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		volumeMounts = plugins.Sandboxes[reqDevice.Spec.SandboxName].VolumeMounts
 		volumes = plugins.Sandboxes[reqDevice.Spec.SandboxName].Volumes
 		// handle private dir creation
-		err = preCreateUserDir(volumes, reqDevice.Spec.OpenHydraUsername, builder.Config)
+		err = preCreateUserDir(volumes, reqDevice.Spec.OpenHydraUsername, serverConfig)
 		if err != nil {
 			writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to create user dir: %v", err))
 			return
@@ -244,17 +267,17 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		if gpuSet.Gpu > 0 {
 			// go with gpu image
 			if reqDevice.Spec.GpuDriver == "" {
-				if builder.Config.DefaultGpuDriver == "" {
+				if serverConfig.DefaultGpuDriver == "" {
 					writeHttpResponseAndLogError(response, http.StatusBadRequest, "both gpu driver and DefaultGpuDriver are empty")
 					return
 				}
-				reqDevice.Spec.GpuDriver = builder.Config.DefaultGpuDriver
+				reqDevice.Spec.GpuDriver = serverConfig.DefaultGpuDriver
 			}
 
 			// ensure gpu is allowed
 			// should be in config
 			gpuIsAllowed := false
-			for _, gpuAllowed := range builder.Config.GpuResourceKeys {
+			for _, gpuAllowed := range serverConfig.GpuResourceKeys {
 				if gpuAllowed == reqDevice.Spec.GpuDriver {
 					gpuIsAllowed = true
 					break
@@ -300,9 +323,9 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 	}
 
 	deployParameter := &k8s.DeploymentParameters{
-		CpuMemorySet: builder.CombineReqLimit(reqDevice),
+		CpuMemorySet: builder.CombineReqLimit(reqDevice, serverConfig),
 		Image:        image,
-		Namespace:    builder.Config.OpenHydraNamespace,
+		Namespace:    OpenhydraNamespace,
 		Username:     reqDevice.Spec.OpenHydraUsername,
 		SandboxName:  reqDevice.Spec.SandboxName,
 		VolumeMounts: volumeMounts,
@@ -321,7 +344,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
-	err = builder.k8sHelper.CreateService(builder.Config.OpenHydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, builder.kubeClient, ports)
+	err = builder.k8sHelper.CreateService(OpenhydraNamespace, reqDevice.Spec.OpenHydraUsername, reqDevice.Spec.SandboxName, builder.kubeClient, ports)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, err.Error())
 		return
@@ -378,8 +401,15 @@ func (builder *OpenHydraRouteBuilder) DeviceDeleteRouteHandler(request *restful.
 		return
 	}
 
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	username := request.PathParameter("username")
-	if !builder.Config.DisableAuth {
+	if !serverConfig.DisableAuth {
 		reqUser := request.HeaderParameter(openHydraHeaderUser)
 		reqRole := request.HeaderParameter(openHydraHeaderRole)
 		if reqUser == "" || reqRole == "" {
@@ -396,26 +426,26 @@ func (builder *OpenHydraRouteBuilder) DeviceDeleteRouteHandler(request *restful.
 		}
 	}
 
-	err := builder.k8sHelper.DeleteUserDeployment(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
+	err = builder.k8sHelper.DeleteUserDeployment(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		slog.Error("Failed to delete user deployment will proceed to delete service any way", err)
 	}
 
-	if builder.Config.PatchResourceNotRelease {
+	if serverConfig.PatchResourceNotRelease {
 		// if with certain calico version, we may encounter bug like delete deploy but rs and pod will not be deleted
 		// so we have to manually delete rs and pod
-		err = builder.k8sHelper.DeleteUserReplicaSet(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
+		err = builder.k8sHelper.DeleteUserReplicaSet(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
 		if err != nil {
 			slog.Error("patch:PatchResourceNotRelease -> Failed to delete user replica set will proceed anyway", err)
 		}
 
-		err = builder.k8sHelper.DeleteUserPod(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
+		err = builder.k8sHelper.DeleteUserPod(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
 		if err != nil {
 			slog.Error("patch:PatchResourceNotRelease -> Failed to delete user pod will proceed anyway", err)
 		}
 	}
 
-	err = builder.k8sHelper.DeleteUserService(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
+	err = builder.k8sHelper.DeleteUserService(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		slog.Error("Failed to delete user service", err)
 	}
@@ -434,9 +464,9 @@ func (builder *OpenHydraRouteBuilder) DeviceDeleteRouteHandler(request *restful.
 	response.WriteEntity(&result)
 }
 
-func (builder *OpenHydraRouteBuilder) GetCpu(postDevice xDeviceV1.Device) (string, string) {
-	cpuReq := builder.Config.DefaultCpuPerDevice
-	cpuLimit := builder.Config.DefaultCpuPerDevice
+func (builder *OpenHydraRouteBuilder) GetCpu(postDevice xDeviceV1.Device, serverConfig *config.OpenHydraServerConfig) (string, string) {
+	cpuReq := serverConfig.DefaultCpuPerDevice
+	cpuLimit := serverConfig.DefaultCpuPerDevice
 	if postDevice.Spec.DeviceCpu != "" {
 		i, err := strconv.ParseUint(postDevice.Spec.DeviceCpu, 10, 64)
 		if err != nil {
@@ -447,17 +477,17 @@ func (builder *OpenHydraRouteBuilder) GetCpu(postDevice xDeviceV1.Device) (strin
 		}
 	}
 
-	if builder.Config.CpuOverCommitRate > 1 {
+	if serverConfig.CpuOverCommitRate > 1 {
 		// apply cpu over commit rate
-		cpuReq = cpuReq / uint64(builder.Config.CpuOverCommitRate)
+		cpuReq = cpuReq / uint64(serverConfig.CpuOverCommitRate)
 	}
 
 	return fmt.Sprintf("%dm", cpuReq), fmt.Sprintf("%dm", cpuLimit)
 }
 
-func (builder *OpenHydraRouteBuilder) GetRam(postDevice xDeviceV1.Device) (string, string) {
-	memoryReq := builder.Config.DefaultRamPerDevice
-	memoryLimit := builder.Config.DefaultRamPerDevice
+func (builder *OpenHydraRouteBuilder) GetRam(postDevice xDeviceV1.Device, serverConfig *config.OpenHydraServerConfig) (string, string) {
+	memoryReq := serverConfig.DefaultRamPerDevice
+	memoryLimit := serverConfig.DefaultRamPerDevice
 	if postDevice.Spec.DeviceRam != "" {
 		i, err := strconv.ParseUint(postDevice.Spec.DeviceRam, 10, 64)
 		if err != nil {
@@ -468,17 +498,17 @@ func (builder *OpenHydraRouteBuilder) GetRam(postDevice xDeviceV1.Device) (strin
 		}
 	}
 
-	if builder.Config.MemoryOverCommitRate > 1 {
+	if serverConfig.MemoryOverCommitRate > 1 {
 		// apply memory over commit rate
-		memoryReq = memoryReq / uint64(builder.Config.MemoryOverCommitRate)
+		memoryReq = memoryReq / uint64(serverConfig.MemoryOverCommitRate)
 	}
 
 	return fmt.Sprintf("%dMi", memoryReq), fmt.Sprintf("%dMi", memoryLimit)
 }
 
-func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Device) k8s.CpuMemorySet {
-	cpuReq, cpuLimit := builder.GetCpu(postDevice)
-	memoryReq, memoryLimit := builder.GetRam(postDevice)
+func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Device, serverConfig *config.OpenHydraServerConfig) k8s.CpuMemorySet {
+	cpuReq, cpuLimit := builder.GetCpu(postDevice, serverConfig)
+	memoryReq, memoryLimit := builder.GetRam(postDevice, serverConfig)
 	return k8s.CpuMemorySet{
 		CpuRequest:    cpuReq,
 		CpuLimit:      cpuLimit,
@@ -487,10 +517,10 @@ func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Devic
 	}
 }
 
-func (builder *OpenHydraRouteBuilder) BuildGpu(postDevice xDeviceV1.Device) envApi.GpuSet {
+func (builder *OpenHydraRouteBuilder) BuildGpu(postDevice xDeviceV1.Device, serverConfig *config.OpenHydraServerConfig) envApi.GpuSet {
 	result := envApi.GpuSet{
-		GpuDriverName: builder.Config.DefaultGpuDriver,
-		Gpu:           builder.Config.DefaultGpuPerDevice,
+		GpuDriverName: serverConfig.DefaultGpuDriver,
+		Gpu:           serverConfig.DefaultGpuPerDevice,
 	}
 	if postDevice.Spec.DeviceGpu > 0 {
 		result.Gpu = postDevice.Spec.DeviceGpu

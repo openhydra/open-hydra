@@ -33,21 +33,31 @@ func (builder *OpenHydraRouteBuilder) SummaryGetRouteHandler(request *restful.Re
 		return
 	}
 	// TODO may be all namespace
-	pods, err := builder.k8sHelper.ListPod(builder.Config.OpenHydraNamespace, builder.kubeClient)
+	pods, err := builder.k8sHelper.ListPod(OpenhydraNamespace, builder.kubeClient)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Error getting pod list: %v", err))
 		return
 	}
 
-	sumUp := builder.SumUpGpuResources(pods, nodeList)
+	sumUp, err := builder.SumUpGpuResources(pods, nodeList)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Error sum up gpu resources: %v", err))
+		return
+	}
 
 	util.FillObjectGVK(sumUp)
 	_ = response.WriteEntity(sumUp)
 }
 
-func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeList *coreV1.NodeList) *xSumUpV1.SumUp {
-	defRAM := resource.NewQuantity(int64(builder.Config.DefaultRamPerDevice*(1<<20)), resource.BinarySI).String()
-	defCPU := resource.NewMilliQuantity(int64(builder.Config.DefaultCpuPerDevice), resource.DecimalSI).String()
+func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeList *coreV1.NodeList) (*xSumUpV1.SumUp, error) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		return nil, err
+	}
+
+	defRAM := resource.NewQuantity(int64(serverConfig.DefaultRamPerDevice*(1<<20)), resource.BinarySI).String()
+	defCPU := resource.NewMilliQuantity(int64(serverConfig.DefaultCpuPerDevice), resource.DecimalSI).String()
 
 	gpuAllocatable := resource.NewQuantity(0, resource.DecimalSI)
 	gpuAllocated := resource.NewQuantity(0, resource.DecimalSI)
@@ -57,13 +67,13 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 		Allocated   *resource.Quantity
 	}{}
 	var totalLine uint16
-	if len(builder.Config.GpuResourceKeys) == 0 {
+	if len(serverConfig.GpuResourceKeys) == 0 {
 		// warn
 		slog.Warn("gpu resource key is empty, so total gpu number will be 0 and all device use gpu will fall back to default")
 	} else {
 
 		for _, node := range nodeList.Items {
-			for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
+			for _, gpuResourceKey := range serverConfig.GpuResourceKeys {
 				gpu := node.Status.Allocatable[coreV1.ResourceName(gpuResourceKey)]
 				if _, found := gpuResourceCount[gpuResourceKey]; found {
 					gpuResourceCount[gpuResourceKey].Allocatable.Add(gpu)
@@ -80,7 +90,7 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 		}
 		for _, pod := range pods {
 			for _, ctr := range pod.Spec.Containers {
-				for _, gpuResourceKey := range builder.Config.GpuResourceKeys {
+				for _, gpuResourceKey := range serverConfig.GpuResourceKeys {
 					gpuRequests := ctr.Resources.Requests[coreV1.ResourceName(gpuResourceKey)]
 					gpuResourceCount[gpuResourceKey].Allocated.Add(gpuRequests)
 				}
@@ -103,8 +113,8 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 	}
 
 	podAllocatable := 0
-	if builder.Config.DefaultGpuPerDevice != 0 {
-		podAllocatable = int(gpuAllocatable.Value() / int64(builder.Config.DefaultGpuPerDevice))
+	if serverConfig.DefaultGpuPerDevice != 0 {
+		podAllocatable = int(gpuAllocatable.Value() / int64(serverConfig.DefaultGpuPerDevice))
 	}
 
 	return &xSumUpV1.SumUp{
@@ -118,9 +128,9 @@ func (builder *OpenHydraRouteBuilder) SumUpGpuResources(pods []coreV1.Pod, nodeL
 			GpuAllocated:        gpuAllocated.String(),
 			DefaultCpuPerDevice: defCPU,
 			DefaultRamPerDevice: defRAM,
-			DefaultGpuPerDevice: builder.Config.DefaultGpuPerDevice,
+			DefaultGpuPerDevice: serverConfig.DefaultGpuPerDevice,
 			TotalLine:           totalLine,
 			GpuResourceSumUp:    gpuDriverSumUp,
 		},
-	}
+	}, nil
 }

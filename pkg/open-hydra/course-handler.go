@@ -71,7 +71,15 @@ func (builder *OpenHydraRouteBuilder) AddCourseCreateRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.Request, response *restful.Response) {
-	err := request.Request.ParseMultipartForm(builder.Config.PublicCourseMaxSize)
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
+	err = request.Request.ParseMultipartForm(serverConfig.PublicCourseMaxSize)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to parse multipart form: %v", err))
@@ -89,9 +97,9 @@ func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.
 
 	// we need to get config map openhydra-plugin first
 	// TODO: we should use informer to cache config map instead of query api-server directly for performance
-	pluginConfigMap, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	pluginConfigMap, err := builder.k8sHelper.GetConfigMap("openhydra-plugin", OpenhydraNamespace)
 	if err != nil {
-		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get config map: %v", err))
 		return
 	}
 
@@ -145,7 +153,7 @@ func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.
 		return
 	}
 
-	coursePath, err := filepath.Abs(filepath.Join(builder.Config.PublicCourseBasePath, name))
+	coursePath, err := filepath.Abs(filepath.Join(serverConfig.PublicCourseBasePath, name))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to get course path: %v", err.Error()))
@@ -190,8 +198,16 @@ func (builder *OpenHydraRouteBuilder) AddCourseUpdateRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) CourseUpdateRouteHandler(request *restful.Request, response *restful.Response) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	courseName := request.PathParameter("course-name")
-	err := request.Request.ParseMultipartForm(builder.Config.PublicCourseMaxSize)
+	err = request.Request.ParseMultipartForm(serverConfig.PublicCourseMaxSize)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to parse multipart form: %v", err))
@@ -229,7 +245,7 @@ func (builder *OpenHydraRouteBuilder) CourseUpdateRouteHandler(request *restful.
 
 	// update course file
 
-	coursePath, err := filepath.Abs(filepath.Join(builder.Config.PublicCourseBasePath, course.Name))
+	coursePath, err := filepath.Abs(filepath.Join(serverConfig.PublicCourseBasePath, course.Name))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to get course path: %v", err.Error()))
@@ -254,13 +270,21 @@ func (builder *OpenHydraRouteBuilder) AddCourseDeleteRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) CourseDeleteRouteHandler(request *restful.Request, response *restful.Response) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	courseName := request.PathParameter("course-name")
-	err := builder.Database.DeleteCourse(courseName)
+	err = builder.Database.DeleteCourse(courseName)
 	if err != nil {
 		writeAPIStatusError(response, err)
 		return
 	}
-	coursePath, err := filepath.Abs(filepath.Join(builder.Config.PublicCourseBasePath, courseName))
+	coursePath, err := filepath.Abs(filepath.Join(serverConfig.PublicCourseBasePath, courseName))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
 			fmt.Sprintf("Failed to get course path: %v", err.Error()))

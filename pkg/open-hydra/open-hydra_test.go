@@ -96,10 +96,12 @@ var _ = Describe("open-hydra-server handler test", func() {
 	var openHydraConfig *config.OpenHydraServerConfig
 	var builder *OpenHydraRouteBuilder
 	var device *xDeviceV1.Device
+	var fakeK8sHelper *k8s.Fake
 	BeforeEach(func() {
+		fakeK8sHelper = k8s.NewDefaultK8sHelperWithFake()
 		openHydraConfig = config.DefaultConfig()
 		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
-		builder = NewOpenHydraRouteBuilder(nil, openHydraConfig, nil, nil, nil)
+		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper)
 		device = &xDeviceV1.Device{
 			TypeMeta: metaV1.TypeMeta{
 				Kind: "Device",
@@ -120,45 +122,53 @@ var _ = Describe("open-hydra-server handler test", func() {
 		}
 	})
 
+	Describe("GetServerConfigFromConfigMap test", func() {
+		It("get server config from config map should be expected", func() {
+			config, err := builder.GetServerConfigFromConfigMap()
+			Expect(err).To(BeNil())
+			Expect(config).To(Equal(fakeK8sHelper.ServerConfig))
+		})
+	})
+
 	Describe("device handler test", func() {
 		It("get cpu without over committing should be expected", func() {
-			cpuReq, cpuLimit := builder.GetCpu(*device)
+			cpuReq, cpuLimit := builder.GetCpu(*device, openHydraConfig)
 			Expect(cpuReq).To(Equal("4000m"))
 			Expect(cpuLimit).To(Equal("4000m"))
 			device.Spec.DeviceCpu = ""
-			cpuReq, cpuLimit = builder.GetCpu(*device)
+			cpuReq, cpuLimit = builder.GetCpu(*device, openHydraConfig)
 			Expect(cpuReq).To(Equal("2000m"))
 			Expect(cpuLimit).To(Equal("2000m"))
 		})
 
 		It("get ram without over committing should be expected", func() {
-			ramReq, ramLimit := builder.GetRam(*device)
+			ramReq, ramLimit := builder.GetRam(*device, openHydraConfig)
 			Expect(ramReq).To(Equal("10240Mi"))
 			Expect(ramLimit).To(Equal("10240Mi"))
 			device.Spec.DeviceRam = ""
-			ramReq, ramLimit = builder.GetRam(*device)
+			ramReq, ramLimit = builder.GetRam(*device, openHydraConfig)
 			Expect(ramReq).To(Equal("8192Mi"))
 			Expect(ramLimit).To(Equal("8192Mi"))
 		})
 
 		It("get cpu with over committing should be expected", func() {
 			openHydraConfig.CpuOverCommitRate = 2
-			cpuReq, cpuLimit := builder.GetCpu(*device)
+			cpuReq, cpuLimit := builder.GetCpu(*device, openHydraConfig)
 			Expect(cpuReq).To(Equal("2000m"))
 			Expect(cpuLimit).To(Equal("4000m"))
 			device.Spec.DeviceCpu = ""
-			cpuReq, cpuLimit = builder.GetCpu(*device)
+			cpuReq, cpuLimit = builder.GetCpu(*device, openHydraConfig)
 			Expect(cpuReq).To(Equal("1000m"))
 			Expect(cpuLimit).To(Equal("2000m"))
 		})
 
 		It("get ram with over committing should be expected", func() {
 			openHydraConfig.MemoryOverCommitRate = 2
-			ramReq, ramLimit := builder.GetRam(*device)
+			ramReq, ramLimit := builder.GetRam(*device, openHydraConfig)
 			Expect(ramReq).To(Equal("5120Mi"))
 			Expect(ramLimit).To(Equal("10240Mi"))
 			device.Spec.DeviceRam = ""
-			ramReq, ramLimit = builder.GetRam(*device)
+			ramReq, ramLimit = builder.GetRam(*device, openHydraConfig)
 			Expect(ramReq).To(Equal("4096Mi"))
 			Expect(ramLimit).To(Equal("8192Mi"))
 		})
@@ -166,7 +176,7 @@ var _ = Describe("open-hydra-server handler test", func() {
 		It("combine cpu memory set with over commit should be expected", func() {
 			openHydraConfig.CpuOverCommitRate = 2
 			openHydraConfig.MemoryOverCommitRate = 2
-			result := builder.CombineReqLimit(*device)
+			result := builder.CombineReqLimit(*device, openHydraConfig)
 			Expect(result.CpuRequest).To(Equal("2000m"))
 			Expect(result.CpuLimit).To(Equal("4000m"))
 			Expect(result.MemoryRequest).To(Equal("5120Mi"))
@@ -174,7 +184,7 @@ var _ = Describe("open-hydra-server handler test", func() {
 		})
 
 		It("combine cpu memory set without over commit should be expected", func() {
-			result := builder.CombineReqLimit(*device)
+			result := builder.CombineReqLimit(*device, openHydraConfig)
 			Expect(result.CpuRequest).To(Equal("4000m"))
 			Expect(result.CpuLimit).To(Equal("4000m"))
 			Expect(result.MemoryRequest).To(Equal("10240Mi"))
@@ -182,12 +192,12 @@ var _ = Describe("open-hydra-server handler test", func() {
 		})
 
 		It("get gpu should be set 0", func() {
-			gpu := builder.BuildGpu(*device)
+			gpu := builder.BuildGpu(*device, openHydraConfig)
 			Expect(gpu.GpuDriverName).To(Equal("test"))
 			Expect(gpu.Gpu).To(Equal(uint8(0)))
 			device.Spec.GpuDriver = ""
 			device.Spec.DeviceGpu = 1
-			gpu = builder.BuildGpu(*device)
+			gpu = builder.BuildGpu(*device, openHydraConfig)
 			Expect(gpu.GpuDriverName).To(Equal("nvidia.com/gpu"))
 			Expect(gpu.Gpu).To(Equal(uint8(1)))
 		})
@@ -200,8 +210,9 @@ var _ = Describe("open-hydra-server handler test", func() {
 var _ = Describe("SumUpGpuResources test", func() {
 	var pods []coreV1.Pod
 	var nodes *coreV1.NodeList
-	var openHydraConfig *config.OpenHydraServerConfig
+	//var openHydraConfig *config.OpenHydraServerConfig
 	var builder *OpenHydraRouteBuilder
+	var fakeK8sHelper *k8s.Fake
 	var createFakeGpuPod = func(name, namespace, gpuDriver, gpuNumberToUse string) coreV1.Pod {
 		pod := coreV1.Pod{
 			ObjectMeta: metaV1.ObjectMeta{
@@ -243,8 +254,8 @@ var _ = Describe("SumUpGpuResources test", func() {
 		return node
 	}
 	BeforeEach(func() {
-		openHydraConfig = config.DefaultConfig()
-		builder = NewOpenHydraRouteBuilder(nil, openHydraConfig, nil, nil, nil)
+		fakeK8sHelper = k8s.NewDefaultK8sHelperWithFake()
+		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper)
 		nodes = &coreV1.NodeList{
 			Items: []coreV1.Node{
 				{
@@ -301,7 +312,8 @@ var _ = Describe("SumUpGpuResources test", func() {
 	It("sum up gpu resources should be expected", func() {
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "", ""))
 		pods = append(pods, createFakeGpuPod("test", "test", "", ""))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("2"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("2"))
 	})
@@ -309,7 +321,8 @@ var _ = Describe("SumUpGpuResources test", func() {
 	It("sum up gpu resources individually should be expected", func() {
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "", ""))
 		pods = append(pods, createFakeGpuPod("test", "test", "", ""))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
@@ -317,19 +330,21 @@ var _ = Describe("SumUpGpuResources test", func() {
 	})
 
 	It("add huawei gpu resources should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
 	})
 
 	It("add huawei gpu resources individually should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
@@ -339,23 +354,25 @@ var _ = Describe("SumUpGpuResources test", func() {
 	})
 
 	It("add more device should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "muxi")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "muxi")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("6"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
 	})
 
 	It("add more device individually should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "muxi")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "muxi")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
@@ -367,21 +384,23 @@ var _ = Describe("SumUpGpuResources test", func() {
 	})
 
 	It("add more device without config it should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuAllocatable).To(Equal("4"))
 		Expect(gpuResources.Spec.GpuAllocated).To(Equal("4"))
 	})
 
 	It("add more device individually without config it should be expected", func() {
-		openHydraConfig.GpuResourceKeys = append(openHydraConfig.GpuResourceKeys, "huawei")
+		fakeK8sHelper.ServerConfig.GpuResourceKeys = append(fakeK8sHelper.ServerConfig.GpuResourceKeys, "huawei")
 		nodes.Items = append(nodes.Items, createFakeNode("test", "test", "huawei", "2"))
 		nodes.Items = append(nodes.Items, createFakeNode("test1", "test1", "muxi", "2"))
 		pods = append(pods, createFakeGpuPod("test", "test", "huawei", "2"))
-		gpuResources := builder.SumUpGpuResources(pods, nodes)
+		gpuResources, err := builder.SumUpGpuResources(pods, nodes)
+		Expect(err).To(BeNil())
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocatable).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["nvidia.com/gpu"].Allocated).To(Equal(int64(2)))
 		Expect(gpuResources.Spec.GpuResourceSumUp["amd.com/gpu"].Allocatable).To(Equal(int64(0)))
@@ -601,7 +620,7 @@ var _ = Describe("open-hydra-server combineDeviceList test", func() {
 })
 
 var _ = Describe("open-hydra-server authorization test", func() {
-	var openHydraConfig *config.OpenHydraServerConfig
+	//var openHydraConfig *config.OpenHydraServerConfig
 	var builder *OpenHydraRouteBuilder
 	var teacher *xUserV1.OpenHydraUser
 	var student *xUserV1.OpenHydraUser
@@ -616,6 +635,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 	var openHydraSettingsURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s/default", option.GroupVersion.Group, SettingPath)
 	var openHydraDatasetsURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, DatasetPath)
 	var openHydraCoursesURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, CoursePath)
+	var fakeK8sHelper *k8s.Fake
 	var fakeService = func() *restful.WebService {
 		ws := new(restful.WebService)
 		ws.Path(fmt.Sprintf("/apis/%s/%s", option.GroupVersion.Group, option.GroupVersion.Version))
@@ -716,7 +736,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 
 	var initContainer = func() {
 		container = restful.NewContainer()
-		builder = NewOpenHydraRouteBuilder(fakeDb, openHydraConfig, fakeService(), nil, k8s.NewDefaultK8sHelperWithFake())
+		builder = NewOpenHydraRouteBuilder(fakeDb, fakeService(), nil, fakeK8sHelper)
 		builder.AddXUserListRoute()
 		builder.AddXUserCreateRoute()
 		builder.AddXUserGetRoute()
@@ -742,7 +762,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		builder.AddCourseGetRoute()
 		builder.AddCourseUpdateRoute()
 		builder.AddCourseDeleteRoute()
-		if !openHydraConfig.DisableAuth {
+		if !fakeK8sHelper.ServerConfig.DisableAuth {
 			builder.RootWS.Filter(builder.Filter)
 		}
 		container.Add(builder.RootWS)
@@ -790,13 +810,15 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		Expect(string(data)).To(Equal("test"))
 	}
 	BeforeEach(func() {
-		openHydraConfig = config.DefaultConfig()
-		openHydraConfig.PublicDatasetBasePath = "/tmp/public-dataset"
-		openHydraConfig.PublicCourseBasePath = "/tmp/public-course"
-		openHydraConfig.WorkspacePath = "/tmp/workspace"
-		util.CreateDirIfNotExists(openHydraConfig.PublicDatasetBasePath)
-		util.CreateDirIfNotExists(openHydraConfig.PublicCourseBasePath)
-		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
+
+		//openHydraConfig = config.DefaultConfig()
+		fakeK8sHelper = k8s.NewDefaultK8sHelperWithFake()
+		fakeK8sHelper.ServerConfig.PublicDatasetBasePath = "/tmp/public-dataset"
+		fakeK8sHelper.ServerConfig.PublicCourseBasePath = "/tmp/public-course"
+		fakeK8sHelper.ServerConfig.WorkspacePath = "/tmp/workspace"
+		util.CreateDirIfNotExists(fakeK8sHelper.ServerConfig.PublicDatasetBasePath)
+		util.CreateDirIfNotExists(fakeK8sHelper.ServerConfig.PublicCourseBasePath)
+		fakeK8sHelper.ServerConfig.DefaultGpuDriver = "nvidia.com/gpu"
 		teacher = createFakeUser("teacher", "teacher", 1)
 		student = createFakeUser("student", "student", 2)
 		newTeacher = createFakeUser("newTeacher", "newTeacher", 1)
@@ -1043,7 +1065,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("open-hydra user list by student should be ok when disableAuth", func() {
-			openHydraConfig.DisableAuth = true
+			fakeK8sHelper.ServerConfig.DisableAuth = true
 			initContainer()
 			_, r2 := callApi(http.MethodGet, openHydraUsersURL, createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
@@ -1114,7 +1136,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("create dataset by teacher should be ok", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraDatasetsURL, fakeK8sHelper.ServerConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 
 			// list it
 			_, r2 := callApi(http.MethodGet, openHydraDatasetsURL, createTokenValue(teacher, nil), nil)
@@ -1138,24 +1160,24 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target2.Spec.Description).To(Equal("unit-test"))
 
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicDatasetBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicDatasetBasePath, "unit-test"))
 		})
 
 		It("dataset will reject students", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraDatasetsURL, fakeK8sHelper.ServerConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodGet, openHydraDatasetsURL, createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			_, r2 = callApi(http.MethodGet, openHydraDatasetsURL+"/unit-test", createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicDatasetBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicDatasetBasePath, "unit-test"))
 		})
 
 		It("dataset delete by teacher should be ok", func() {
-			uploadResource(openHydraDatasetsURL, openHydraConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraDatasetsURL, fakeK8sHelper.ServerConfig.PublicDatasetBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodDelete, openHydraDatasetsURL+"/unit-test", createTokenValue(teacher, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
-			_, err := os.Stat(path.Join(openHydraConfig.PublicDatasetBasePath, "unit-test"))
+			_, err := os.Stat(path.Join(fakeK8sHelper.ServerConfig.PublicDatasetBasePath, "unit-test"))
 			Expect(os.IsNotExist(err)).To(BeTrue())
 
 			// list it
@@ -1170,7 +1192,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		})
 
 		It("create course by teacher should be ok", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 
 			// list it
 			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(teacher, nil), nil)
@@ -1194,27 +1216,27 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target2.Spec.Description).To(Equal("unit-test"))
 
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("create course by teacher failed due to level not parsable", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{
 				"level": "funny",
 			}, http.StatusBadRequest)
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("create course by teacher failed due to sandbox not pre-config well", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{
 				"sandboxName": "sandbox-not-exists",
 			}, http.StatusBadRequest)
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("create course by teacher should be ok with level and sandbox proper returned", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{
 				"level":       "1",
 				"sandboxName": "jupyter-lab",
 			}, http.StatusCreated)
@@ -1243,11 +1265,11 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target2.Spec.SandboxName).To(Equal("jupyter-lab"))
 
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("create course by teacher should be ok with level and sandbox default value is returned", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 
 			// list it
 			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(teacher, nil), nil)
@@ -1273,24 +1295,24 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target2.Spec.SandboxName).To(Equal("test"))
 
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("course will reject students", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodGet, openHydraCoursesURL, createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			_, r2 = callApi(http.MethodGet, openHydraCoursesURL+"/unit-test", createTokenValue(student, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusForbidden))
 			util.DeleteDirs("/tmp/test")
-			util.DeleteDirs(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			util.DeleteDirs(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 		})
 
 		It("course delete by teacher should be ok", func() {
-			uploadResource(openHydraCoursesURL, openHydraConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
+			uploadResource(openHydraCoursesURL, fakeK8sHelper.ServerConfig.PublicCourseBasePath, map[string]string{}, http.StatusCreated)
 			_, r2 := callApi(http.MethodDelete, openHydraCoursesURL+"/unit-test", createTokenValue(teacher, nil), nil)
 			Expect(r2.Code).To(Equal(http.StatusOK))
-			_, err := os.Stat(path.Join(openHydraConfig.PublicCourseBasePath, "unit-test"))
+			_, err := os.Stat(path.Join(fakeK8sHelper.ServerConfig.PublicCourseBasePath, "unit-test"))
 			Expect(os.IsNotExist(err)).To(BeTrue())
 
 			// list it

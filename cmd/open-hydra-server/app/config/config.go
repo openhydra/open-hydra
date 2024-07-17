@@ -81,7 +81,6 @@ type (
 		// default = "/root/public-dataset"
 		PublicDatasetStudentMountPath string `json:"dataset_student_mount_path" yaml:"datasetStudentMountPath"`
 		PublicCourseStudentMountPath  string `json:"course_student_mount_path" yaml:"courseStudentMountPath"`
-		OpenHydraNamespace            string `json:"open-hydra_namespace" yaml:"open-hydraNamespace"`
 		// should be no default value but fill it in installation script, because it is a runtime value
 		// if not set we won't be able to start gpu pod at all
 		DefaultGpuDriver string `json:"default_gpu_driver" yaml:"defaultGpuDriver"`
@@ -129,7 +128,6 @@ func DefaultConfig() *OpenHydraServerConfig {
 		PublicCourseStudentMountPath:  "/root/notebook/course-public",
 		MySqlConfig:                   DefaultMySqlConfig(),
 		EtcdConfig:                    DefaultEtcdConfig(),
-		OpenHydraNamespace:            defaultNamespace,
 		LeaderElection:                DefaultLeaderElection(),
 		DefaultGpuDriver:              "nvidia.com/gpu",
 		GpuResourceKeys:               []string{"nvidia.com/gpu", "amd.com/gpu"},

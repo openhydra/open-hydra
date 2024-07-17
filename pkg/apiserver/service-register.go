@@ -46,7 +46,7 @@ func registerDiscoveryService(apiServer *genericApiServer.GenericAPIServer) {
 	apiServer.Handler.GoRestfulContainer.Add(ws)
 }
 
-func registerApiResource(apiServer *genericApiServer.GenericAPIServer, config *config.OpenHydraServerConfig) error {
+func registerApiResource(apiServer *genericApiServer.GenericAPIServer, config *config.OpenHydraServerConfig, stopChan <-chan struct{}) error {
 	ws := getWebService()
 	resourceIndexPathTemplate := "/apis/%s/%s"
 	resourceIndexPath := fmt.Sprintf(resourceIndexPathTemplate, option.GroupVersion.Group, option.GroupVersion.Version)
@@ -73,17 +73,17 @@ func registerApiResource(apiServer *genericApiServer.GenericAPIServer, config *c
 
 	err := db.InitDb()
 	if err != nil {
-		slog.Error("Failed to init db", err)
+		slog.Error("Failed to init db", "error", err)
 		return err
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(config.KubeConfig)
 	if err != nil {
-		slog.Error("Failed to create kube client", err)
+		slog.Error("Failed to create kube client", "error", err)
 		return err
 	}
 
-	RBuilder := openHydraHandler.NewOpenHydraRouteBuilder(db, config, ws, kubeClient, openHydraK8s.NewDefaultK8sHelper())
+	RBuilder := openHydraHandler.NewOpenHydraRouteBuilder(db, ws, kubeClient, openHydraK8s.NewDefaultK8sHelper(kubeClient, stopChan))
 	RBuilder.AddXUserListRoute()
 	RBuilder.AddXUserCreateRoute()
 	RBuilder.AddXUserGetRoute()

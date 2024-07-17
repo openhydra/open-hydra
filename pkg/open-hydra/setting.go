@@ -8,6 +8,7 @@ import (
 	"open-hydra/pkg/util"
 
 	"github.com/emicklei/go-restful/v3"
+	"gopkg.in/yaml.v2"
 )
 
 func (builder *OpenHydraRouteBuilder) AddGetSettingRoute() {
@@ -20,13 +21,20 @@ func (builder *OpenHydraRouteBuilder) AddGetSettingRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) GetSettingRouteHandler(request *restful.Request, response *restful.Response) {
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	result := xSetting.Setting{}
 	util.FillKindAndApiVersion(&result.TypeMeta, SettingKind)
 	result.Name = request.PathParameter("name")
 	result.Spec = xSetting.SettingSpec{}
-	result.Spec.DefaultGpuPerDevice = builder.Config.DefaultGpuPerDevice
+	result.Spec.DefaultGpuPerDevice = serverConfig.DefaultGpuPerDevice
 	// now get all plugins from configmap
-	cm, err := builder.k8sHelper.GetMap("openhydra-plugin", builder.Config.OpenHydraNamespace, builder.kubeClient)
+	cm, err := builder.k8sHelper.GetConfigMap("openhydra-plugin", OpenhydraNamespace)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to get configmap: %v", err))
 		return
@@ -58,7 +66,28 @@ func (builder *OpenHydraRouteBuilder) UpdateSettingRouteHandler(request *restful
 		return
 	}
 	setting.Name = request.PathParameter("name")
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	util.FillKindAndApiVersion(&setting.TypeMeta, SettingKind)
-	builder.Config.DefaultGpuPerDevice = setting.Spec.DefaultGpuPerDevice
+	serverConfig.DefaultGpuPerDevice = setting.Spec.DefaultGpuPerDevice
+
+	configJson, err := yaml.Marshal(serverConfig)
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to marshal yaml: %v", err))
+		return
+	}
+
+	err = builder.k8sHelper.UpdateConfigMap("open-hydra-config", OpenhydraNamespace, map[string]string{"config.yaml": string(configJson)})
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to update configmap: %v", err))
+		return
+	}
+
 	response.WriteHeaderAndEntity(http.StatusOK, setting)
 }

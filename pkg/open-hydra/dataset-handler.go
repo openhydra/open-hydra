@@ -84,7 +84,15 @@ func (builder *OpenHydraRouteBuilder) AddDatasetCreateRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) DatasetCreateRouteHandler(request *restful.Request, response *restful.Response) {
-	err := request.Request.ParseMultipartForm(builder.Config.PublicDatasetMaxSize)
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
+	err = request.Request.ParseMultipartForm(serverConfig.PublicDatasetMaxSize)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to parse multipart form: %v", err))
@@ -120,7 +128,7 @@ func (builder *OpenHydraRouteBuilder) DatasetCreateRouteHandler(request *restful
 		return
 	}
 
-	datasetPath, err := filepath.Abs(filepath.Join(builder.Config.PublicDatasetBasePath, name))
+	datasetPath, err := filepath.Abs(filepath.Join(serverConfig.PublicDatasetBasePath, name))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to get dataset path: %v", err.Error()))
@@ -162,8 +170,16 @@ func (builder *OpenHydraRouteBuilder) AddDatasetUpdateRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) DatasetUpdateRouteHandler(request *restful.Request, response *restful.Response) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	datasetName := request.PathParameter("dataset-name")
-	err := request.Request.ParseMultipartForm(builder.Config.PublicDatasetMaxSize)
+	err = request.Request.ParseMultipartForm(serverConfig.PublicDatasetMaxSize)
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to parse multipart form: %v", err))
@@ -201,7 +217,7 @@ func (builder *OpenHydraRouteBuilder) DatasetUpdateRouteHandler(request *restful
 
 	// update dataset file
 
-	datasetPath, err := filepath.Abs(filepath.Join(builder.Config.PublicDatasetBasePath, dataset.Name))
+	datasetPath, err := filepath.Abs(filepath.Join(serverConfig.PublicDatasetBasePath, dataset.Name))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest,
 			fmt.Sprintf("Failed to get dataset path: %v", err.Error()))
@@ -226,13 +242,21 @@ func (builder *OpenHydraRouteBuilder) AddDatasetDeleteRoute() {
 }
 
 func (builder *OpenHydraRouteBuilder) DatasetDeleteRouteHandler(request *restful.Request, response *restful.Response) {
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	datasetName := request.PathParameter("dataset-name")
-	err := builder.Database.DeleteDataset(datasetName)
+	err = builder.Database.DeleteDataset(datasetName)
 	if err != nil {
 		writeAPIStatusError(response, err)
 		return
 	}
-	datasetPath, err := filepath.Abs(filepath.Join(builder.Config.PublicDatasetBasePath, datasetName))
+	datasetPath, err := filepath.Abs(filepath.Join(serverConfig.PublicDatasetBasePath, datasetName))
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
 			fmt.Sprintf("Failed to get dataset path: %v", err.Error()))

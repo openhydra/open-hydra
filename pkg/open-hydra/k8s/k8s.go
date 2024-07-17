@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"open-hydra/pkg/open-hydra/apis"
 	"strconv"
 
@@ -10,7 +11,9 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -28,6 +31,8 @@ const (
 )
 
 type DefaultHelper struct {
+	clientSet         *kubernetes.Clientset
+	configMapInformer cache.SharedIndexInformer
 }
 
 func (help *DefaultHelper) ListDeploymentWithLabel(label, namespace string, client *kubernetes.Clientset) ([]appsV1.Deployment, error) {
@@ -394,13 +399,57 @@ func (help *DefaultHelper) DeleteUserPod(label, namespace string, client *kubern
 	return nil
 }
 
-func (help *DefaultHelper) GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
+func (help *DefaultHelper) GetConfigMap(name, namespace string) (*coreV1.ConfigMap, error) {
+	if help.configMapInformer == nil {
+		return nil, fmt.Errorf("informer is not initialized")
 	}
-	cm, err := client.CoreV1().ConfigMaps(namespace).Get(context.Background(), name, metaV1.GetOptions{})
+
+	key := fmt.Sprintf("%s/%s", namespace, name)
+
+	cm, exists, err := help.configMapInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return nil, err
 	}
-	return cm, nil
+	if !exists {
+		return nil, fmt.Errorf("config map %s not found", key)
+	}
+
+	// Assert the object to *corev1.ConfigMap
+	cmAsserted, ok := cm.(*coreV1.ConfigMap)
+	if !ok {
+		return nil, fmt.Errorf("object is not a ConfigMap")
+	}
+
+	return cmAsserted, nil
+}
+
+func (help *DefaultHelper) InitInformer() {
+	if help.configMapInformer == nil {
+		factory := informers.NewSharedInformerFactory(help.clientSet, 0)
+		help.configMapInformer = factory.Core().V1().ConfigMaps().Informer()
+	}
+}
+
+func (help *DefaultHelper) RunInformers(stopChan <-chan struct{}) {
+	go help.configMapInformer.Run(stopChan)
+	if !cache.WaitForCacheSync(stopChan, help.configMapInformer.HasSynced) {
+		slog.Error("failed to sync config map informer")
+	}
+	slog.Info("config map informer synced")
+}
+
+func (help *DefaultHelper) UpdateConfigMap(name, namespace string, data map[string]string) error {
+	if help.clientSet == nil {
+		return fmt.Errorf("client is nil")
+	}
+	cm, err := help.clientSet.CoreV1().ConfigMaps(namespace).Get(context.TODO(), name, metaV1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	cm.Data = data
+	_, err = help.clientSet.CoreV1().ConfigMaps(namespace).Update(context.TODO(), cm, metaV1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -27,8 +28,8 @@ type CacheDevices map[string]*xDeviceV1.Device
 
 type OpenHydraRouteBuilder struct {
 	Database database.IDataBase
-	Config   *config.OpenHydraServerConfig
-	RootWS   *restful.WebService
+	//Config   *config.OpenHydraServerConfig
+	RootWS *restful.WebService
 	// this is local cache relation between user and device
 	CacheDevices     CacheDevices
 	kubeClient       *kubernetes.Clientset
@@ -36,10 +37,10 @@ type OpenHydraRouteBuilder struct {
 	authorizationMap map[string]map[string]int
 }
 
-func NewOpenHydraRouteBuilder(db database.IDataBase, config *config.OpenHydraServerConfig, rootWS *restful.WebService, client *kubernetes.Clientset, k8sHelper openHydraK8s.IOpenHydraK8sHelper) *OpenHydraRouteBuilder {
+func NewOpenHydraRouteBuilder(db database.IDataBase, rootWS *restful.WebService, client *kubernetes.Clientset, k8sHelper openHydraK8s.IOpenHydraK8sHelper) *OpenHydraRouteBuilder {
 	return &OpenHydraRouteBuilder{
-		Database:         db,
-		Config:           config,
+		Database: db,
+		//Config:           config,
 		RootWS:           rootWS,
 		CacheDevices:     map[string]*xDeviceV1.Device{},
 		kubeClient:       client,
@@ -137,4 +138,24 @@ func (builder *OpenHydraRouteBuilder) addPathAuthorization(relPath, httpMethod s
 	} else {
 		builder.authorizationMap[relPath][httpMethod] = requiredRole
 	}
+}
+
+func (builder *OpenHydraRouteBuilder) GetServerConfigFromConfigMap() (*config.OpenHydraServerConfig, error) {
+	configMap, err := builder.k8sHelper.GetConfigMap("open-hydra-config", "open-hydra")
+	if err != nil {
+		return nil, err
+	}
+
+	if configMap.Data == nil {
+		return nil, fmt.Errorf("config map data is empty")
+	}
+
+	serverConfig := &config.OpenHydraServerConfig{}
+
+	err = yaml.Unmarshal([]byte(configMap.Data["config.yaml"]), serverConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return serverConfig, nil
 }

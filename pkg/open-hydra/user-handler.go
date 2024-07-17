@@ -103,7 +103,14 @@ func (builder *OpenHydraRouteBuilder) AddXUserGetRoute() {
 func (builder *OpenHydraRouteBuilder) XUserGetRouteHandler(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 
-	if !builder.Config.DisableAuth {
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
+	if !serverConfig.DisableAuth {
 		reqUser := request.HeaderParameter(openHydraHeaderUser)
 		reqRole := request.HeaderParameter(openHydraHeaderRole)
 		if reqUser == "" || reqRole == "" {
@@ -205,6 +212,14 @@ func (builder *OpenHydraRouteBuilder) XUserDeleteRouteHandler(request *restful.R
 		writeAPIStatusError(response, err)
 		return
 	}
+
+	serverConfig, err := builder.GetServerConfigFromConfigMap()
+	if err != nil {
+		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get server config: %v", err))
+		return
+	}
+
 	err = builder.Database.DeleteUser(username)
 	if err != nil {
 		writeAPIStatusError(response, err)
@@ -212,11 +227,11 @@ func (builder *OpenHydraRouteBuilder) XUserDeleteRouteHandler(request *restful.R
 	}
 
 	slog.Info(fmt.Sprintf("one shot attempting to delete related k8s resource for user: %s", username))
-	_ = builder.k8sHelper.DeleteUserDeployment(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
-	_ = builder.k8sHelper.DeleteUserService(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
-	if builder.Config.PatchResourceNotRelease {
-		_ = builder.k8sHelper.DeleteUserReplicaSet(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
-		_ = builder.k8sHelper.DeleteUserPod(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), builder.Config.OpenHydraNamespace, builder.kubeClient)
+	_ = builder.k8sHelper.DeleteUserDeployment(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
+	_ = builder.k8sHelper.DeleteUserService(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
+	if serverConfig.PatchResourceNotRelease {
+		_ = builder.k8sHelper.DeleteUserReplicaSet(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
+		_ = builder.k8sHelper.DeleteUserPod(fmt.Sprintf("%s=%s", k8s.OpenHydraUserLabelKey, username), OpenhydraNamespace, builder.kubeClient)
 	}
 
 	response.WriteEntity(oldUser)

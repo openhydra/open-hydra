@@ -2,7 +2,9 @@ package k8s
 
 import (
 	"fmt"
+	"open-hydra/cmd/open-hydra-server/app/config"
 
+	"gopkg.in/yaml.v2"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +18,7 @@ type Fake struct {
 	labelPod          map[string][]coreV1.Pod
 	labelDeploy       map[string][]appsV1.Deployment
 	labelService      map[string][]coreV1.Service
+	ServerConfig      *config.OpenHydraServerConfig
 }
 
 func (f *Fake) Init() {
@@ -25,6 +28,7 @@ func (f *Fake) Init() {
 	f.labelPod = make(map[string][]coreV1.Pod)
 	f.labelDeploy = make(map[string][]appsV1.Deployment)
 	f.labelService = make(map[string][]coreV1.Service)
+	f.ServerConfig = config.DefaultConfig()
 }
 
 func (f *Fake) ListDeploymentWithLabel(label, namespace string, client *kubernetes.Clientset) ([]appsV1.Deployment, error) {
@@ -114,10 +118,11 @@ func (f *Fake) DeleteUserPod(label, namespace string, client *kubernetes.Clients
 	return nil
 }
 
-func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*coreV1.ConfigMap, error) {
-	return &coreV1.ConfigMap{
-		Data: map[string]string{
-			"plugins": `{
+func (f *Fake) GetConfigMap(name, namespace string) (*coreV1.ConfigMap, error) {
+	if name == "openhydra-plugin" {
+		return &coreV1.ConfigMap{
+			Data: map[string]string{
+				"plugins": `{
 			"defaultSandbox": "test",
 			"sandboxes":{
 				"test": {
@@ -236,6 +241,30 @@ func (f *Fake) GetMap(name, namespace string, client *kubernetes.Clientset) (*co
 					"status": "running"
 				}
 			}}`,
-		},
-	}, nil
+			},
+		}, nil
+	} else {
+		yamlData, err := yaml.Marshal(f.ServerConfig)
+		if err != nil {
+			return nil, err
+		}
+		return &coreV1.ConfigMap{
+			Data: map[string]string{
+				"config.yaml": string(yamlData),
+			},
+		}, nil
+	}
+}
+
+func (help *Fake) UpdateConfigMap(name, namespace string, data map[string]string) error {
+	marshaledConfig := &config.OpenHydraServerConfig{}
+	err := yaml.Unmarshal([]byte(data["config.yaml"]), marshaledConfig)
+	if err != nil {
+		return err
+	}
+	help.ServerConfig = marshaledConfig
+	return nil
+}
+
+func (help *Fake) RunInformers(stopChan <-chan struct{}) {
 }
