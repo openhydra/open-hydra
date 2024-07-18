@@ -150,7 +150,7 @@ func (builder *OpenHydraRouteBuilder) GetServerConfigFromConfigMap() (*config.Op
 		return nil, fmt.Errorf("config map data is empty")
 	}
 
-	serverConfig := &config.OpenHydraServerConfig{}
+	serverConfig := config.DefaultConfig()
 
 	err = yaml.Unmarshal([]byte(configMap.Data["config.yaml"]), serverConfig)
 	if err != nil {

@@ -124,9 +124,14 @@ var _ = Describe("open-hydra-server handler test", func() {
 
 	Describe("GetServerConfigFromConfigMap test", func() {
 		It("get server config from config map should be expected", func() {
+			fakeK8sHelper.ServerConfig.PodAllocatableLimit = 0
 			config, err := builder.GetServerConfigFromConfigMap()
 			Expect(err).To(BeNil())
-			Expect(config).To(Equal(fakeK8sHelper.ServerConfig))
+			Expect(int(config.PodAllocatableLimit)).To(Equal(-1))
+			fakeK8sHelper.ServerConfig.PodAllocatableLimit = 100
+			config, err = builder.GetServerConfigFromConfigMap()
+			Expect(err).To(BeNil())
+			Expect(int(config.PodAllocatableLimit)).To(Equal(100))
 		})
 	})
 
