@@ -135,10 +135,7 @@ func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client 
 	return nil
 }
 
-func (help *DefaultHelper) CreateDeployment(deployParameter *DeploymentParameters) error {
-	if deployParameter.Client == nil {
-		return fmt.Errorf("client is nil")
-	}
+func createDeployment(deployParameter *DeploymentParameters) *appsV1.Deployment {
 	baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, deployParameter.Username)
 	replicas := int32(1)
 	resourceReq, resourceLim := createResource(deployParameter.CpuMemorySet, deployParameter.GpuSet)
@@ -179,6 +176,16 @@ func (help *DefaultHelper) CreateDeployment(deployParameter *DeploymentParameter
 	}
 
 	deployment.Spec.Template.Spec.Affinity = deployParameter.Affinity
+
+	return deployment
+}
+
+func (help *DefaultHelper) CreateDeployment(deployParameter *DeploymentParameters) error {
+	if deployParameter.Client == nil {
+		return fmt.Errorf("client is nil")
+	}
+
+	deployment := createDeployment(deployParameter)
 
 	_, err := deployParameter.Client.AppsV1().Deployments(deployParameter.Namespace).Create(context.TODO(), deployment, metaV1.CreateOptions{})
 	if err != nil {
