@@ -277,8 +277,8 @@ func (db *Mysql) GetCourse(name string) (*xCourseV1.Course, error) {
 	}
 	var course xCourseV1.Course
 	util.FillObjectGVK(&course)
-	row := inst.QueryRow("SELECT name, description, created_by, create_time, last_update FROM course WHERE name = ?", name)
-	err = row.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time)
+	row := inst.QueryRow("SELECT name, description, created_by, create_time, last_update, file_size FROM course WHERE name = ?", name)
+	err = row.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size)
 	if err != nil {
 		if stdErr.Is(err, sql.ErrNoRows) {
 			course.GetResourceVersion()
@@ -341,7 +341,7 @@ func (db *Mysql) ListCourses() (xCourseV1.CourseList, error) {
 		return xCourseV1.CourseList{}, err
 	}
 
-	rows, err := inst.Query("SELECT name, description, created_by, create_time, last_update FROM course ")
+	rows, err := inst.Query("SELECT name, description, created_by, create_time, last_update, file_size FROM course ")
 	if err != nil {
 		return xCourseV1.CourseList{}, err
 	}
@@ -350,7 +350,7 @@ func (db *Mysql) ListCourses() (xCourseV1.CourseList, error) {
 	for rows.Next() {
 		var course xCourseV1.Course
 		util.FillObjectGVK(&course)
-		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time)
+		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size)
 		if err != nil {
 			return xCourseV1.CourseList{}, err
 		}
