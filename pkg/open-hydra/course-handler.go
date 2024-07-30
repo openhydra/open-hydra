@@ -173,6 +173,7 @@ func (builder *OpenHydraRouteBuilder) CourseCreateRouteHandler(request *restful.
 			CreatedBy:   createdBy,
 			Level:       level,
 			SandboxName: sandboxName,
+			Size:        fileHeader.Size,
 		},
 	}
 

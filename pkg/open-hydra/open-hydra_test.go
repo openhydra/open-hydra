@@ -1208,6 +1208,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			err = json.Unmarshal(result, &target)
 			Expect(err).To(BeNil())
 			Expect(len(target.Items)).To(Equal(1))
+			Expect(target.Items[0].Spec.Size).To(Equal(int64(448)))
 
 			// get it
 			_, r2 = callApi(http.MethodGet, openHydraCoursesURL+"/unit-test", createTokenValue(teacher, nil), nil)
