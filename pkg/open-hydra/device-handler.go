@@ -29,6 +29,9 @@ func (builder *OpenHydraRouteBuilder) AddDeviceListRoute() {
 
 func (builder *OpenHydraRouteBuilder) DeviceListRouteHandler(request *restful.Request, response *restful.Response) {
 
+	filter := request.QueryParameters("group")
+	fmt.Println(filter)
+
 	serverConfig, err := builder.GetServerConfigFromConfigMap()
 	if err != nil {
 		writeHttpResponseAndLogError(response, http.StatusInternalServerError,
@@ -336,6 +339,7 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		Ports:        ports,
 		Volumes:      volumes,
 		Affinity:     reqDevice.Spec.Affinity,
+		CustomLabels: reqDevice.Labels,
 	}
 
 	err = builder.k8sHelper.CreateDeployment(deployParameter)

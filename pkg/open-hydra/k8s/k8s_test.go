@@ -189,5 +189,20 @@ var _ = Describe("K8s", func() {
 			Expect(deployment.Spec.Template.Spec.Volumes[0].HostPath.Path).To(Equal("/test/path"))
 			Expect(deployment.Spec.Template.Spec.Affinity).To(Equal(affinity))
 		})
+		It("should be expected label proper set", func() {
+			deployParameter.CustomLabels = map[string]string{
+				"testLabel": "testValue",
+			}
+			deployment := createDeployment(deployParameter)
+			Expect(deployment.Labels["testLabel"]).To(Equal("testValue"))
+		})
+		It("should be expected custom label key should be ignored", func() {
+			deployParameter.CustomLabels = map[string]string{
+				OpenHydraUserLabelKey: "testValue",
+			}
+			deployment := createDeployment(deployParameter)
+			Expect(deployment.Labels[OpenHydraUserLabelKey]).To(Equal(deployParameter.Username))
+		})
+
 	})
 })

@@ -2,3 +2,5 @@ cmd/open-hydra-server/open-hydra-server
 .idea
 .vscode
 coverage.out
+*__debug_bin
+*__debug_bin*

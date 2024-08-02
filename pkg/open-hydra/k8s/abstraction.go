@@ -22,6 +22,7 @@ type DeploymentParameters struct {
 	Ports        map[string]int
 	Volumes      []apis.Volume
 	Affinity     *coreV1.Affinity
+	CustomLabels map[string]string
 }
 
 type IOpenHydraK8sHelper interface {

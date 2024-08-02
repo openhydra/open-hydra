@@ -633,7 +633,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 	var fakeDb *database.Faker
 	var container *restful.Container
 	var req *restful.Request
-	var device1, device2, device3, device4, device5, device6, device7, device8 *xDeviceV1.Device
+	var device1, device2, device3, device4, device5, device6, device7, device8, deviceWithLabel *xDeviceV1.Device
 	var setting *xSetting.Setting
 	var openHydraUsersURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, OpenHydraUserPath)
 	var openHydraDevicesURL = fmt.Sprintf("http://localhost/apis/%s/v1/%s", option.GroupVersion.Group, DevicePath)
@@ -836,6 +836,10 @@ var _ = Describe("open-hydra-server authorization test", func() {
 		device6 = createDevice("student", "jupyter-lab-no-ports", "", 0)
 		device7 = createDevice("student", "jupyter-lab", "amd.com/gpu", 1)
 		device8 = createDevice("student", "jupyter-lab", "huawei", 1)
+		deviceWithLabel = createDevice("student", "jupyter-lab", "", 0)
+		deviceWithLabel.Labels = map[string]string{
+			"test": "test",
+		}
 		setting = &xSetting.Setting{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name: "default",
@@ -1002,6 +1006,19 @@ var _ = Describe("open-hydra-server authorization test", func() {
 			Expect(target.Spec.DeviceType).To(Equal("cpu"))
 			Expect(target.Spec.DeviceStatus).To(Equal("Creating"))
 			Expect(target.Spec.OpenHydraUsername).To(Equal("student"))
+		})
+
+		It("open-hydra device create should be expected with label", func() {
+			body1, err := json.Marshal(deviceWithLabel)
+			Expect(err).To(BeNil())
+			_, r2 := callApi(http.MethodPost, openHydraDevicesURL, createTokenValue(teacher, nil), bytes.NewReader(body1))
+			Expect(r2.Code).To(Equal(http.StatusOK))
+			var target xDeviceV1.Device
+			result, err := io.ReadAll(r2.Body)
+			Expect(err).To(BeNil())
+			err = json.Unmarshal(result, &target)
+			Expect(err).To(BeNil())
+			Expect(target.Labels["test"]).To(Equal("test"))
 		})
 
 		It("open-hydra device should be rejected as expected", func() {

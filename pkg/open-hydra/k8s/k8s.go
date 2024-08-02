@@ -175,6 +175,17 @@ func createDeployment(deployParameter *DeploymentParameters) *appsV1.Deployment 
 		},
 	}
 
+	for key, value := range deployParameter.CustomLabels {
+		// add label to deployment if key not found
+		if _, ok := deployment.Labels[key]; !ok {
+			deployment.Labels[key] = value
+		}
+		// add label to pod if key not found
+		if _, ok := deployment.Spec.Template.Labels[key]; !ok {
+			deployment.Spec.Template.Labels[key] = value
+		}
+	}
+
 	deployment.Spec.Template.Spec.Affinity = deployParameter.Affinity
 
 	return deployment
