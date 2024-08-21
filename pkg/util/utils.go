@@ -132,3 +132,5 @@ func GetStringValueOrDefault(targetDescription, targetValue, defaultValue string
 	}
 	return defaultValue
 }
+
+// add a comment for build image job
