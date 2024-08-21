@@ -1,5 +1,4 @@
 FROM golang:1.21.8-alpine3.19 as build
-ENV GOPROXY=https://goproxy.cn
 WORKDIR /openhydra
 COPY . /openhydra
 RUN apk add make bash which && make go-build
