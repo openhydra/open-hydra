@@ -350,7 +350,7 @@ func (db *Mysql) ListCourses() (xCourseV1.CourseList, error) {
 	for rows.Next() {
 		var course xCourseV1.Course
 		util.FillObjectGVK(&course)
-		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size)
+		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size, &course.Spec.Level)
 		if err != nil {
 			return xCourseV1.CourseList{}, err
 		}
