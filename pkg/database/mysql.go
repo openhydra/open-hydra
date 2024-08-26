@@ -242,7 +242,7 @@ func (db *Mysql) InitDb() error {
 		return err
 	}
 
-	_, err = inst.Exec("CREATE TABLE IF NOT EXISTS course ( id INT AUTO_INCREMENT PRIMARY KEY, name  VARCHAR(255), description NVARCHAR(255) , created_by NVARCHAR(255) , last_update DATETIME , create_time DATETIME , file_size BIGINT , level INT , UNIQUE (name) )")
+	_, err = inst.Exec("CREATE TABLE IF NOT EXISTS course ( id INT AUTO_INCREMENT PRIMARY KEY, name  VARCHAR(255), description NVARCHAR(255) , created_by NVARCHAR(255) , last_update DATETIME , create_time DATETIME , file_size BIGINT , level INT , sandbox_name VARCHAR(255), UNIQUE (name) )")
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (db *Mysql) CreateCourse(course *xCourseV1.Course) error {
 	}
 	course.Spec.LastUpdate = metaV1.Now()
 	course.CreationTimestamp = metaV1.Now()
-	result, err := ins.Exec("INSERT INTO course (name, description, created_by, create_time, last_update, file_size, level) VALUES (?, ?, ?, ?, ?, ?, ?)", course.Name, course.Spec.Description, course.Spec.CreatedBy, course.CreationTimestamp.Time, course.Spec.LastUpdate.Time, course.Spec.Size, course.Spec.Level)
+	result, err := ins.Exec("INSERT INTO course (name, description, created_by, create_time, last_update, file_size, level, sandbox_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", course.Name, course.Spec.Description, course.Spec.CreatedBy, course.CreationTimestamp.Time, course.Spec.LastUpdate.Time, course.Spec.Size, course.Spec.Level, course.Spec.SandboxName)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to crate course %s into database", course.Name), err)
 		return err
@@ -277,8 +277,8 @@ func (db *Mysql) GetCourse(name string) (*xCourseV1.Course, error) {
 	}
 	var course xCourseV1.Course
 	util.FillObjectGVK(&course)
-	row := inst.QueryRow("SELECT name, description, created_by, create_time, last_update, file_size, level FROM course WHERE name = ?", name)
-	err = row.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size, &course.Spec.Level)
+	row := inst.QueryRow("SELECT name, description, created_by, create_time, last_update, file_size, level, sandbox_name FROM course WHERE name = ?", name)
+	err = row.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size, &course.Spec.Level, &course.Spec.SandboxName)
 	if err != nil {
 		if stdErr.Is(err, sql.ErrNoRows) {
 			course.GetResourceVersion()
@@ -297,7 +297,7 @@ func (db *Mysql) UpdateCourse(course *xCourseV1.Course) error {
 		return err
 	}
 	course.Spec.LastUpdate = metaV1.Now()
-	result, err := inst.Exec("UPDATE course SET description = ?, last_update = ? WHERE name = ?", course.Spec.Description, course.Spec.LastUpdate.Time, course.Name)
+	result, err := inst.Exec("UPDATE course SET description = ?, last_update = ?, sandbox_name = ? WHERE name = ?", course.Spec.Description, course.Spec.LastUpdate.Time, course.Name, course.Spec.SandboxName)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to update course %s from database", course.Name), err)
 		return err
@@ -341,7 +341,7 @@ func (db *Mysql) ListCourses() (xCourseV1.CourseList, error) {
 		return xCourseV1.CourseList{}, err
 	}
 
-	rows, err := inst.Query("SELECT name, description, created_by, create_time, last_update, file_size, level FROM course ")
+	rows, err := inst.Query("SELECT name, description, created_by, create_time, last_update, file_size, level, sandbox_name FROM course ")
 	if err != nil {
 		return xCourseV1.CourseList{}, err
 	}
@@ -350,7 +350,7 @@ func (db *Mysql) ListCourses() (xCourseV1.CourseList, error) {
 	for rows.Next() {
 		var course xCourseV1.Course
 		util.FillObjectGVK(&course)
-		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size, &course.Spec.Level)
+		err = rows.Scan(&course.Name, &course.Spec.Description, &course.Spec.CreatedBy, &course.CreationTimestamp.Time, &course.Spec.LastUpdate.Time, &course.Spec.Size, &course.Spec.Level, &course.Spec.SandboxName)
 		if err != nil {
 			return xCourseV1.CourseList{}, err
 		}
