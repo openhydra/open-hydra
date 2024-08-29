@@ -17,6 +17,7 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	xDatasetV1 "open-hydra/pkg/apis/open-hydra-api/dataset/core/v1"
+	"unicode/utf8"
 
 	"github.com/emicklei/go-restful/v3"
 	simpleChinese "golang.org/x/text/encoding/simplifiedchinese"
@@ -328,6 +329,12 @@ func writeZipFile(destPah string, zipFile *zip.File) error {
 }
 
 func decodeGB18030ToString(data []byte) (string, error) {
+
+	// Try UTF-8 first
+	if utf8.Valid(data) {
+		return string(data), nil
+	}
+
 	reader := transform.NewReader(bytes.NewReader(data), simpleChinese.GB18030.NewDecoder())
 	decoded, err := io.ReadAll(reader)
 	if err != nil {
