@@ -195,7 +195,7 @@ root@kind-control-plane:# exit
 
 ### 使用预先打包的 iso 一体机快速安装
 
-我们提供打包的好的带有 ubuntu 操作系统的 iso 镜像方便用户直接快速部署相关组件，详见 [iso 安装指南](docs/iso-installation-guide.md)
+我们提供打包的好的带有 ubuntu 操作系统的 iso 镜像方便用户直接快速部署相关组件，详见 [iso 安装指南](https://github.com/openhydra/core-api/blob/main/docs/installation/iso-installation-guide.md)
 
 ### 在已有的 k8s 环境上部署 open-hydra
 
