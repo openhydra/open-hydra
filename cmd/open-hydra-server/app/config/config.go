@@ -99,6 +99,7 @@ type (
 		AuthDelegateConfig      *AuthDelegateConfig `json:"auth_delegate_config,omitempty" yaml:"authDelegateConfig,omitempty"`
 		MaximumPortsPerSandbox  uint8               `json:"maximum_ports_per_sandbox,omitempty" yaml:"maximumPortsPerSandbox,omitempty"`
 		WorkspacePath           string              `json:"workspace_path,omitempty" yaml:"workspacePath,omitempty"`
+		KubeClientConfig        *KubeClientConfig   `json:"kube_client_config,omitempty" yaml:"kubeClientConfig,omitempty"`
 	}
 )
 
@@ -136,6 +137,7 @@ func DefaultConfig() *OpenHydraServerConfig {
 		MemoryOverCommitRate:          1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2
 		MaximumPortsPerSandbox:        3,
 		WorkspacePath:                 "/mnt/workspace",
+		KubeClientConfig:              &KubeClientConfig{QPS: 100, Burst: 200},
 	}
 }
 
@@ -170,6 +172,11 @@ type KeystoneConfig struct {
 	ProjectId          string `json:"project_id,omitempty" yaml:"projectId,omitempty"`
 	TokenKeyInResponse string `json:"token_key_in_response,omitempty" yaml:"tokenKeyInResponse,omitempty"`
 	TokenKeyInRequest  string `json:"token_key_in_request,omitempty" yaml:"tokenKeyInRequest,omitempty"`
+}
+
+type KubeClientConfig struct {
+	QPS   float32 `json:"qps,omitempty" yaml:"qps,omitempty"`
+	Burst int     `json:"burst,omitempty" yaml:"burst,omitempty"`
 }
 
 func DefaultEtcdConfig() *EtcdConfig {
@@ -214,6 +221,11 @@ func LoadConfig(configFilePath, kubeConfig string) (*OpenHydraServerConfig, erro
 		config.KubeConfig, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
 	} else {
 		config.KubeConfig, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), defaultKubeConfigDir))
+	}
+
+	if config.KubeConfig != nil {
+		config.KubeConfig.QPS = config.KubeClientConfig.QPS
+		config.KubeConfig.Burst = config.KubeClientConfig.Burst
 	}
 
 	return config, err
