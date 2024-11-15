@@ -5,7 +5,6 @@ metadata:
   namespace: open-hydra
 
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -15,12 +14,11 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  name: open-hydra-admin
-  namespace: open-hydra
+  - kind: ServiceAccount
+    name: open-hydra-admin
+    namespace: open-hydra
 
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -31,12 +29,11 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  name: open-hydra-admin
-  namespace: open-hydra
+  - kind: ServiceAccount
+    name: open-hydra-admin
+    namespace: open-hydra
 
 ---
-
 apiVersion: v1
 data:
   config.yaml: |
@@ -81,7 +78,6 @@ metadata:
   namespace: open-hydra
 
 ---
-
 # deployment that mount configmap open-hydra-config to /etc/open-hydra/config.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -102,52 +98,57 @@ spec:
     spec:
       serviceAccountName: open-hydra-admin
       containers:
-      - name: open-hydra-api
-        image: registry.cn-shanghai.aliyuncs.com/openhydra/open-hydra-server:latest
-        imagePullPolicy: IfNotPresent
-        command: ["open-hydra-server", "run","--open-hydra-server-config", "/etc/open-hydra/config.yaml"]
-        ports:
-        - containerPort: 443
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: open-hydra-config
-          mountPath: /etc/open-hydra/config.yaml
-          subPath: config.yaml
-        - name: dataset
-          mountPath: /mnt/public-dataset
-          mountPropagation: Bidirectional
-        - name: course
-          mountPath: /mnt/public-course
-          mountPropagation: Bidirectional
-        - name: workspace
-          mountPath: /mnt/workspace
-          mountPropagation: Bidirectional
+        - name: open-hydra-api
+          image: registry.cn-shanghai.aliyuncs.com/openhydra/open-hydra-server:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "open-hydra-server",
+              "run",
+              "--open-hydra-server-config",
+              "/etc/open-hydra/config.yaml",
+            ]
+          ports:
+            - containerPort: 443
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: open-hydra-config
+              mountPath: /etc/open-hydra/config.yaml
+              subPath: config.yaml
+            - name: dataset
+              mountPath: /mnt/public-dataset
+              mountPropagation: Bidirectional
+            - name: course
+              mountPath: /mnt/public-course
+              mountPropagation: Bidirectional
+            - name: workspace
+              mountPath: /mnt/workspace
+              mountPropagation: Bidirectional
       volumes:
-      - name: open-hydra-config
-        configMap:
-          name: open-hydra-config
-          items:
-          - key: config.yaml
-            path: config.yaml
-      - name: dataset
-        hostPath:
-          # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
-          path: /mnt/public-dataset
-          type: Directory
-      - name: course
-        hostPath:
-          # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
-          path: /mnt/public-course
-          type: Directory
-      - name: workspace
-        hostPath:
-          # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
-          path: /mnt/workspace
-          type: Directory
+        - name: open-hydra-config
+          configMap:
+            name: open-hydra-config
+            items:
+              - key: config.yaml
+                path: config.yaml
+        - name: dataset
+          hostPath:
+            # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
+            path: /mnt/public-dataset
+            type: Directory
+        - name: course
+          hostPath:
+            # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
+            path: /mnt/public-course
+            type: Directory
+        - name: workspace
+          hostPath:
+            # This will mount the "/mnt/data" directory from the host node to the "/etc/nginx/conf.d" path in the container.
+            path: /mnt/workspace
+            type: Directory
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -155,19 +156,18 @@ metadata:
   namespace: open-hydra
 spec:
   ipFamilies:
-  - IPv4
+    - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-  - name: https
-    port: 443
-    protocol: TCP
+    - name: https
+      port: 443
+      protocol: TCP
   selector:
     app: open-hydra-api
   sessionAffinity: None
   type: ClusterIP
 
 ---
-
 apiVersion: apiregistration.k8s.io/v1
 kind: APIService
 metadata:
@@ -184,14 +184,13 @@ spec:
   versionPriority: 15
 
 ---
-
 apiVersion: v1
 data:
   plugins: |
     {
-        "defaultSandbox": "xedu",
+        "defaultSandbox": "XEdu",
         "sandboxes": {
-            "xedu": {
+            "XEdu": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
                 "gpuImageSet": {
                     "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
@@ -263,7 +262,7 @@ data:
                     }
                 ]
             },
-            "keras": {
+            "Keras": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
                 "gpuImageSet": {
                     "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
