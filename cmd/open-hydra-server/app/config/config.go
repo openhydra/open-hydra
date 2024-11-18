@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -226,6 +228,7 @@ func LoadConfig(configFilePath, kubeConfig string) (*OpenHydraServerConfig, erro
 	if config.KubeConfig != nil {
 		config.KubeConfig.QPS = config.KubeClientConfig.QPS
 		config.KubeConfig.Burst = config.KubeClientConfig.Burst
+		slog.Debug(fmt.Sprintf("set kube client config QPS: %f, Burst: %d", config.KubeConfig.QPS, config.KubeConfig.Burst))
 	}
 
 	return config, err
