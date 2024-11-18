@@ -11,8 +11,10 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	coreV1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -33,6 +35,12 @@ const (
 type DefaultHelper struct {
 	clientSet         *kubernetes.Clientset
 	configMapInformer cache.SharedIndexInformer
+	podInformer       cache.SharedIndexInformer
+	svcInformer       cache.SharedIndexInformer
+	nodeInformer      cache.SharedIndexInformer
+	podCache          coreV1listers.PodLister
+	svcCache          coreV1listers.ServiceLister
+	nodeCache         coreV1listers.NodeLister
 }
 
 func (help *DefaultHelper) ListDeploymentWithLabel(label, namespace string, client *kubernetes.Clientset) ([]appsV1.Deployment, error) {
@@ -50,43 +58,60 @@ func (help *DefaultHelper) ListDeploymentWithLabel(label, namespace string, clie
 }
 
 func (help *DefaultHelper) ListPodWithLabel(label, namespace string, client *kubernetes.Clientset) ([]coreV1.Pod, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
+	selector, err := metaV1.ParseToLabelSelector(label)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse label selector: %v", err)
+	}
+	parsedSelector, err := metaV1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert label selector: %v", err)
 	}
 
-	pods, err := client.CoreV1().Pods(namespace).List(context.TODO(), metaV1.ListOptions{
-		LabelSelector: label,
-	})
+	result, err := help.podCache.Pods(namespace).List(parsedSelector)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list pods: %v", err)
 	}
-	return pods.Items, nil
+
+	noRefPods := make([]coreV1.Pod, 0)
+	for _, pod := range result {
+		noRefPods = append(noRefPods, *pod)
+	}
+	return noRefPods, nil
 }
 
 func (help *DefaultHelper) ListPod(namespace string, client *kubernetes.Clientset) ([]coreV1.Pod, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	pods, err := client.CoreV1().Pods(namespace).List(context.TODO(), metaV1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", OpenHydraWorkloadLabelKey, OpenHydraWorkloadLabelValue),
-	})
+	result, err := help.podCache.Pods(namespace).List(labels.Everything())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list pods: %v", err)
 	}
-	return pods.Items, nil
+
+	noRefPods := make([]coreV1.Pod, 0)
+	for _, pod := range result {
+		noRefPods = append(noRefPods, *pod)
+	}
+	return noRefPods, nil
 }
 
 func (help *DefaultHelper) GetUserPods(label, namespace string, client *kubernetes.Clientset) ([]coreV1.Pod, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	pods, err := client.CoreV1().Pods(namespace).List(context.TODO(), metaV1.ListOptions{
-		LabelSelector: label,
-	})
+	selector, err := metaV1.ParseToLabelSelector(label)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse label selector: %v", err)
 	}
-	return pods.Items, nil
+	parsedSelector, err := metaV1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert label selector: %v", err)
+	}
+
+	result, err := help.podCache.Pods(namespace).List(parsedSelector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods: %v", err)
+	}
+
+	noRefPods := make([]coreV1.Pod, 0)
+	for _, pod := range result {
+		noRefPods = append(noRefPods, *pod)
+	}
+	return noRefPods, nil
 }
 
 func (help *DefaultHelper) ListDeployment(namespace string, client *kubernetes.Clientset) ([]appsV1.Deployment, error) {
@@ -103,16 +128,26 @@ func (help *DefaultHelper) ListDeployment(namespace string, client *kubernetes.C
 }
 
 func (help *DefaultHelper) ListService(namespace string, client *kubernetes.Clientset) ([]coreV1.Service, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	services, err := client.CoreV1().Services(namespace).List(context.TODO(), metaV1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", OpenHydraWorkloadLabelKey, OpenHydraWorkloadLabelValue),
-	})
+	label := fmt.Sprintf("%s=%s", OpenHydraWorkloadLabelKey, OpenHydraWorkloadLabelValue)
+	selector, err := metaV1.ParseToLabelSelector(label)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse label selector: %v", err)
 	}
-	return services.Items, nil
+	parsedSelector, err := metaV1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert label selector: %v", err)
+	}
+
+	result, err := help.svcCache.Services(namespace).List(parsedSelector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods: %v", err)
+	}
+
+	noRefSvc := make([]coreV1.Service, 0)
+	for _, svc := range result {
+		noRefSvc = append(noRefSvc, *svc)
+	}
+	return noRefSvc, nil
 }
 
 func (help *DefaultHelper) DeleteUserDeployment(label, namespace string, client *kubernetes.Clientset) error {
@@ -352,31 +387,40 @@ func (help *DefaultHelper) DeleteUserService(label, namespace string, client *ku
 }
 
 func (help *DefaultHelper) GetUserService(label, namespace string, client *kubernetes.Clientset) (*coreV1.Service, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	services, err := client.CoreV1().Services(namespace).List(context.TODO(), metaV1.ListOptions{
-		LabelSelector: label,
-	})
+	selector, err := metaV1.ParseToLabelSelector(label)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse label selector: %v", err)
 	}
-	if len(services.Items) > 0 {
-		return &services.Items[0], nil
+	parsedSelector, err := metaV1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert label selector: %v", err)
 	}
-	return nil, fmt.Errorf("no service found")
+
+	result, err := help.svcCache.Services(namespace).List(parsedSelector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods: %v", err)
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("service not found")
+	}
+
+	return result[0], nil
 }
 
 func (help *DefaultHelper) GetAllNode(client *kubernetes.Clientset) ([]coreV1.Node, error) {
-	if client == nil {
-		return nil, fmt.Errorf("client is nil")
-	}
-	nodes, err := client.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
+
+	nodes, err := help.nodeCache.List(labels.Everything())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list nodes: %v", err)
 	}
 
-	return nodes.Items, nil
+	noRefNodes := make([]coreV1.Node, 0)
+	for _, node := range nodes {
+		noRefNodes = append(noRefNodes, *node)
+	}
+
+	return noRefNodes, nil
 }
 
 func (help *DefaultHelper) DeleteUserReplicaSet(label, namespace string, client *kubernetes.Clientset) error {
@@ -442,18 +486,35 @@ func (help *DefaultHelper) GetConfigMap(name, namespace string) (*coreV1.ConfigM
 }
 
 func (help *DefaultHelper) InitInformer() {
+	factory := informers.NewSharedInformerFactory(help.clientSet, 0)
 	if help.configMapInformer == nil {
-		factory := informers.NewSharedInformerFactory(help.clientSet, 0)
 		help.configMapInformer = factory.Core().V1().ConfigMaps().Informer()
+	}
+	if help.podInformer == nil {
+		help.podInformer = factory.Core().V1().Pods().Informer()
+	}
+
+	if help.svcInformer == nil {
+		help.svcInformer = factory.Core().V1().Services().Informer()
+	}
+
+	if help.nodeInformer == nil {
+		help.nodeInformer = factory.Core().V1().Nodes().Informer()
 	}
 }
 
 func (help *DefaultHelper) RunInformers(stopChan <-chan struct{}) {
 	go help.configMapInformer.Run(stopChan)
-	if !cache.WaitForCacheSync(stopChan, help.configMapInformer.HasSynced) {
-		slog.Error("failed to sync config map informer")
+	go help.podInformer.Run(stopChan)
+	go help.svcInformer.Run(stopChan)
+	go help.nodeInformer.Run(stopChan)
+	if !cache.WaitForCacheSync(stopChan, help.configMapInformer.HasSynced, help.podInformer.HasSynced) {
+		slog.Error("failed to sync all informers informer")
 	}
-	slog.Info("config map informer synced")
+	slog.Info("all informer synced")
+	help.podCache = coreV1listers.NewPodLister(help.podInformer.GetIndexer())
+	help.svcCache = coreV1listers.NewServiceLister(help.svcInformer.GetIndexer())
+	help.nodeCache = coreV1listers.NewNodeLister(help.nodeInformer.GetIndexer())
 }
 
 func (help *DefaultHelper) UpdateConfigMap(name, namespace string, data map[string]string) error {
