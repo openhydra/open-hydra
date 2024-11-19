@@ -151,6 +151,13 @@ func preCreateUserDir(volumes []apis.Volume, username string, config *config.Ope
 				return err
 			}
 			volumes[index].HostPath.Path = dirToCreate
+
+			// copy a file read me to the workspace
+			err = util.CopyFile(fmt.Sprintf("%s/%s", config.WorkspacePath, "README.md"), fmt.Sprintf("%s/%s", dirToCreate, "README.md"))
+			if err != nil {
+				slog.Error("copy readme failed", "msg", err)
+			}
+
 			continue
 		}
 		if strings.Contains(volume.HostPath.Path, "{dataset-public}") {
