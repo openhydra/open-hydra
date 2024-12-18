@@ -106,7 +106,7 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 		if _, found := serviceFlat[user.Name]; found {
 			var portURLs []string
 			for _, port := range serviceFlat[user.Name].Spec.Ports {
-				portURLs = append(portURLs, combineUrl(config.ServerIP, port.NodePort))
+				portURLs = append(portURLs, combineUrl(config.ServerIP, user.Name, port.Name, port.NodePort, config.EnableJupyterLabBaseURL, config))
 			}
 			device.Spec.SandboxURLs = strings.Join(portURLs, ",")
 		}
@@ -115,10 +115,18 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 	return result
 }
 
-func combineUrl(serverAddress string, port int32) string {
+func combineUrl(serverAddress, username, portName string, port int32, enableJupyterLabBaseURL bool, config *config.OpenHydraServerConfig) string {
 	addressSet := strings.Split(serverAddress, ",")
 	if len(addressSet) <= 1 {
-		return fmt.Sprintf("http://%s:%d", serverAddress, port)
+		if enableJupyterLabBaseURL {
+			if _, ok := config.ApplyPortNameForIngress[portName]; ok {
+				return fmt.Sprintf("http://%s:%d/%s/%s", serverAddress, config.IngressPort, fmt.Sprintf("%s-%s", username, portName), config.ApplyPortNameForIngress[portName])
+			} else {
+				return fmt.Sprintf("http://%s:%d/%s", serverAddress, config.IngressPort, username)
+			}
+		} else {
+			return fmt.Sprintf("http://%s:%d", serverAddress, port)
+		}
 	}
 	var result []string
 	for _, address := range addressSet {

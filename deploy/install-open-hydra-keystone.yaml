@@ -45,6 +45,8 @@ data:
     courseBasePath: /mnt/public-course
     workspacePath: /mnt/workspace
     defaultGpuDriver: nvidia.com/gpu
+    applyPortNameForIngress:
+      jupyter-lab: lab
     gpuResourceKeys:
       - nvidia.com/gpu
       - amd.com/gpu
@@ -208,7 +210,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {
@@ -279,7 +284,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {
@@ -338,7 +346,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {

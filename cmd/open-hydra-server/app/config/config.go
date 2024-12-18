@@ -87,8 +87,11 @@ type (
 		// if not set we won't be able to start gpu pod at all
 		DefaultGpuDriver string `json:"default_gpu_driver,omitempty" yaml:"defaultGpuDriver,omitempty"`
 		// gpu resource keys that predefine for open-hydra-server to discover gpu resource
-		GpuResourceKeys         []string `json:"gpu_resource_keys,omitempty" yaml:"gpuResourceKeys,omitempty"`
-		ServerIP                string   `json:"server_ip" yaml:"serverIP"`
+		GpuResourceKeys         []string          `json:"gpu_resource_keys,omitempty" yaml:"gpuResourceKeys,omitempty"`
+		ServerIP                string            `json:"server_ip" yaml:"serverIP"`
+		EnableJupyterLabBaseURL bool              `json:"enable_jupyter_lab_base_url" yaml:"enableJupyterLabBaseURL"`
+		ApplyPortNameForIngress map[string]string `json:"apply_port_name_for_ingress,omitempty" yaml:"applyPortNameForIngress,omitempty"`
+		IngressPort             uint16            `json:"ingress_port,omitempty" yaml:"ingressPort,omitempty"`
 		KubeConfig              *rest.Config
 		LeaderElection          *LeaderElection     `json:"leader_election,omitempty" yaml:"leaderElection,omitempty"`
 		MySqlConfig             *MySqlConfig        `json:"mysql_config,omitempty" yaml:"mysqlConfig,omitempty"`
@@ -140,6 +143,8 @@ func DefaultConfig() *OpenHydraServerConfig {
 		MaximumPortsPerSandbox:        3,
 		WorkspacePath:                 "/mnt/workspace",
 		KubeClientConfig:              &KubeClientConfig{QPS: 100, Burst: 200},
+		ApplyPortNameForIngress:       map[string]string{"jupyter-lab": "lab"},
+		IngressPort:                   30006,
 	}
 }
 

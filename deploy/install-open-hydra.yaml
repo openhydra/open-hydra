@@ -48,6 +48,8 @@ data:
     courseBasePath: /mnt/public-course
     workspacePath: /mnt/workspace
     defaultGpuDriver: nvidia.com/gpu
+    applyPortNameForIngress:
+      jupyter-lab: lab
     gpuResourceKeys:
       - nvidia.com/gpu
       - amd.com/gpu
@@ -176,9 +178,9 @@ apiVersion: v1
 data:
   plugins: |
     {
-        "defaultSandbox": "xedu",
+        "defaultSandbox": "XEdu",
         "sandboxes": {
-            "xedu": {
+            "XEdu": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
                 "gpuImageSet": {
                     "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/jupyter:Python-3.8.18-dual-lan",
@@ -196,7 +198,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {
@@ -250,7 +255,7 @@ data:
                     }
                 ]
             },
-            "keras": {
+            "Keras": {
                 "cpuImageName": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:2.15.0-jupyter-cpu",
                 "gpuImageSet": {
                     "nvidia.com/gpu": "registry.cn-shanghai.aliyuncs.com/openhydra/tensorflow:latest-gpu-with-jlab",
@@ -267,7 +272,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {
@@ -326,7 +334,10 @@ data:
                     "lan: chinese | english"
                 ],
                 "ports": [
-                  8888
+                  {
+                    "name": "jupyter-lab",
+                    "port": 8888
+                  }
                 ],
                 "volume_mounts": [
                     {

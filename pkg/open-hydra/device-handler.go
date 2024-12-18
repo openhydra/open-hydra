@@ -262,9 +262,9 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		command = plugins.Sandboxes[reqDevice.Spec.SandboxName].Command
 		args = plugins.Sandboxes[reqDevice.Spec.SandboxName].Args
 		ports = make(map[string]int)
-		for index, port := range plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports {
-			name := fmt.Sprintf("port-%d", index)
-			ports[name] = int(port)
+		for _, port := range plugins.Sandboxes[reqDevice.Spec.SandboxName].Ports {
+
+			ports[port.Name] = int(port.Port)
 		}
 		// set image with different hardware type if match
 		if gpuSet.Gpu > 0 {

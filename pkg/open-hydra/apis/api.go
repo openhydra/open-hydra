@@ -43,10 +43,15 @@ type Sandbox struct {
 	Description     string            `json:"description,omitempty"`
 	DevelopmentInfo []string          `json:"developmentInfo,omitempty"`
 	Status          string            `json:"status,omitempty"`
-	Ports           []uint16          `json:"ports,omitempty"`
+	Ports           []SandboxPort     `json:"ports,omitempty"`
 	VolumeMounts    []VolumeMount     `json:"volume_mounts,omitempty"`
 	Volumes         []Volume          `json:"volumes,omitempty"`
 	IconName        string            `json:"icon_name,omitempty"`
+}
+
+type SandboxPort struct {
+	Port uint16 `json:"port"`
+	Name string `json:"name"`
 }
 
 // +k8s:openapi-gen=true

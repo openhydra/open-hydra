@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"open-hydra/pkg/open-hydra/apis"
 	"strconv"
+	"strings"
 
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
@@ -204,7 +205,7 @@ func createDeployment(deployParameter *DeploymentParameters) *appsV1.Deployment 
 				},
 				Spec: coreV1.PodSpec{
 					Volumes:    createVolume(deployParameter.Volumes),
-					Containers: createContainers(baseName, deployParameter.Image, deployParameter.VolumeMounts, resourceReq, resourceLim, deployParameter.Command, deployParameter.Args, deployParameter.Ports),
+					Containers: createContainers(baseName, deployParameter.Image, deployParameter.Username, deployParameter.VolumeMounts, resourceReq, resourceLim, deployParameter.Command, deployParameter.Args, deployParameter.Ports),
 				},
 			},
 		},
@@ -257,7 +258,7 @@ func createResource(cpuMemorySet CpuMemorySet, gpuSet apis.GpuSet) (coreV1.Resou
 	return resourceReq, resourceLim
 }
 
-func createContainers(baseName, image string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList, command, args []string, ports map[string]int) []coreV1.Container {
+func createContainers(baseName, image, username string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList, command, args []string, ports map[string]int) []coreV1.Container {
 	container := coreV1.Container{
 		Name:            baseName + "-container",
 		Image:           image,
@@ -268,15 +269,21 @@ func createContainers(baseName, image string, volumes []apis.VolumeMount, resour
 		},
 	}
 
+	var envs []coreV1.EnvVar
 	var portsExported []coreV1.ContainerPort
 	for name, port := range ports {
 		portsExported = append(portsExported, coreV1.ContainerPort{
 			Name:          name,
 			ContainerPort: int32(port),
 		})
+		envs = append(envs, coreV1.EnvVar{
+			Name:  fmt.Sprintf("OPENHYDRA_%s", strings.ReplaceAll(strings.ToUpper(name), "-", "_")),
+			Value: fmt.Sprintf("%s-%s", username, name),
+		})
 	}
 
 	container.Ports = portsExported
+	container.Env = envs
 
 	if len(command) > 0 {
 		container.Command = command
