@@ -35,9 +35,10 @@ type OpenHydraRouteBuilder struct {
 	kubeClient       *kubernetes.Clientset
 	k8sHelper        openHydraK8s.IOpenHydraK8sHelper
 	authorizationMap map[string]map[string]int
+	cfg              *config.OpenHydraServerConfig
 }
 
-func NewOpenHydraRouteBuilder(db database.IDataBase, rootWS *restful.WebService, client *kubernetes.Clientset, k8sHelper openHydraK8s.IOpenHydraK8sHelper) *OpenHydraRouteBuilder {
+func NewOpenHydraRouteBuilder(db database.IDataBase, rootWS *restful.WebService, client *kubernetes.Clientset, k8sHelper openHydraK8s.IOpenHydraK8sHelper, cfg *config.OpenHydraServerConfig) *OpenHydraRouteBuilder {
 	return &OpenHydraRouteBuilder{
 		Database: db,
 		//Config:           config,
@@ -46,6 +47,7 @@ func NewOpenHydraRouteBuilder(db database.IDataBase, rootWS *restful.WebService,
 		kubeClient:       client,
 		authorizationMap: make(map[string]map[string]int),
 		k8sHelper:        k8sHelper,
+		cfg:              cfg,
 	}
 }
 

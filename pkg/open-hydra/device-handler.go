@@ -10,6 +10,7 @@ import (
 	envApi "open-hydra/pkg/open-hydra/apis"
 	"open-hydra/pkg/open-hydra/k8s"
 	"open-hydra/pkg/util"
+	"os"
 	"strconv"
 
 	"github.com/emicklei/go-restful/v3"
@@ -259,6 +260,46 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 			writeHttpResponseAndLogError(response, http.StatusInternalServerError, fmt.Sprintf("Failed to create user dir: %v", err))
 			return
 		}
+
+		if builder.cfg.AddProjectResource && reqDevice.Spec.OpenHydraProjectId != "" {
+			// check if dir exists
+			projectDatasetFullPath := fmt.Sprintf("%s/%s", builder.cfg.ProjectDatasetBasePath, reqDevice.Spec.OpenHydraProjectId)
+			_, err := os.Stat(projectDatasetFullPath)
+			if err != nil {
+				slog.Warn(fmt.Sprintf("project dataset base path %s not found will not mount project dataset dir in container", builder.cfg.ProjectDatasetBasePath))
+			} else {
+				volumes = append(volumes, envApi.Volume{
+					HostPath: &envApi.HostPath{
+						Name: "project-dataset",
+						Path: projectDatasetFullPath,
+					},
+				})
+				volumeMounts = append(volumeMounts, envApi.VolumeMount{
+					Name:      "project-dataset",
+					MountPath: builder.cfg.ProjectDatasetStudentMountPath,
+					ReadOnly:  true,
+				})
+			}
+
+			projectCourseFullPath := fmt.Sprintf("%s/%s", builder.cfg.ProjectCourseBasePath, reqDevice.Spec.OpenHydraProjectId)
+			_, err = os.Stat(projectCourseFullPath)
+			if err != nil {
+				slog.Warn(fmt.Sprintf("project course base path %s not found will not mount project course dir in container", builder.cfg.ProjectCourseBasePath))
+			} else {
+				volumes = append(volumes, envApi.Volume{
+					HostPath: &envApi.HostPath{
+						Name: "project-course",
+						Path: projectCourseFullPath,
+					},
+				})
+				volumeMounts = append(volumeMounts, envApi.VolumeMount{
+					Name:      "project-course",
+					MountPath: builder.cfg.ProjectCourseStudentMountPath,
+					ReadOnly:  true,
+				})
+			}
+		}
+
 		command = plugins.Sandboxes[reqDevice.Spec.SandboxName].Command
 		args = plugins.Sandboxes[reqDevice.Spec.SandboxName].Args
 		ports = make(map[string]int)

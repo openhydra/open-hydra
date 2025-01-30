@@ -1,0 +1,94 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reverse-proxy-jlab
+  namespace: open-hydra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image: docker.io/library/nginx:1.24.0-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf-jlab
+          items:
+            - key: nginx.conf
+              path: nginx.conf
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: reverse-proxy
+  namespace: open-hydra
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 8888
+    protocol: TCP
+    targetPort: 8888
+  selector:
+    app: my-app
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+data:
+  nginx.conf: |
+    # /etc/nginx/nginx.conf
+
+    user  nginx;
+    worker_processes  1;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        upstream upstream_jupyter {
+          server openhydra-service-aes-admin.open-hydra.svc:8888;
+          keepalive 32;
+        }
+        server {
+          listen              8888;
+          server_name         test.com;
+          location / {
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_hide_header "X-Frame-Options";
+              proxy_pass http://upstream_jupyter;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade "websocket";
+              proxy_set_header Connection "Upgrade";
+              proxy_read_timeout 86400;
+          }
+        }
+    }
+kind: ConfigMap
+metadata:
+  name: nginx-conf-jlab
+  namespace: open-hydra

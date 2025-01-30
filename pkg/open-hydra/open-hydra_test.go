@@ -101,7 +101,7 @@ var _ = Describe("open-hydra-server handler test", func() {
 		fakeK8sHelper = k8s.NewDefaultK8sHelperWithFake()
 		openHydraConfig = config.DefaultConfig()
 		openHydraConfig.DefaultGpuDriver = "nvidia.com/gpu"
-		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper)
+		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper, openHydraConfig)
 		device = &xDeviceV1.Device{
 			TypeMeta: metaV1.TypeMeta{
 				Kind: "Device",
@@ -260,7 +260,7 @@ var _ = Describe("SumUpGpuResources test", func() {
 	}
 	BeforeEach(func() {
 		fakeK8sHelper = k8s.NewDefaultK8sHelperWithFake()
-		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper)
+		builder = NewOpenHydraRouteBuilder(nil, nil, nil, fakeK8sHelper, config.DefaultConfig())
 		nodes = &coreV1.NodeList{
 			Items: []coreV1.Node{
 				{
@@ -741,7 +741,7 @@ var _ = Describe("open-hydra-server authorization test", func() {
 
 	var initContainer = func() {
 		container = restful.NewContainer()
-		builder = NewOpenHydraRouteBuilder(fakeDb, fakeService(), nil, fakeK8sHelper)
+		builder = NewOpenHydraRouteBuilder(fakeDb, fakeService(), nil, fakeK8sHelper, config.DefaultConfig())
 		builder.AddXUserListRoute()
 		builder.AddXUserCreateRoute()
 		builder.AddXUserGetRoute()

@@ -83,7 +83,7 @@ func registerApiResource(apiServer *genericApiServer.GenericAPIServer, config *c
 		return err
 	}
 
-	RBuilder := openHydraHandler.NewOpenHydraRouteBuilder(db, ws, kubeClient, openHydraK8s.NewDefaultK8sHelper(kubeClient, stopChan))
+	RBuilder := openHydraHandler.NewOpenHydraRouteBuilder(db, ws, kubeClient, openHydraK8s.NewDefaultK8sHelper(kubeClient, stopChan), config)
 	RBuilder.AddXUserListRoute()
 	RBuilder.AddXUserCreateRoute()
 	RBuilder.AddXUserGetRoute()
