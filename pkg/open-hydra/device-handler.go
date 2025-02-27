@@ -161,6 +161,8 @@ func (builder *OpenHydraRouteBuilder) DeviceCreateRouteHandler(request *restful.
 		return
 	}
 
+	slog.Info("Received request to create device", "device", reqDevice)
+
 	if reqDevice.Spec.OpenHydraUsername == "" {
 		writeHttpResponseAndLogError(response, http.StatusBadRequest, "openHydraUsername is empty")
 		return
@@ -565,10 +567,11 @@ func (builder *OpenHydraRouteBuilder) CombineReqLimit(postDevice xDeviceV1.Devic
 func (builder *OpenHydraRouteBuilder) BuildGpu(postDevice xDeviceV1.Device, serverConfig *config.OpenHydraServerConfig) envApi.GpuSet {
 	result := envApi.GpuSet{
 		GpuDriverName: serverConfig.DefaultGpuDriver,
-		Gpu:           serverConfig.DefaultGpuPerDevice,
+		Gpu:           postDevice.Spec.DeviceGpu,
 	}
-	if postDevice.Spec.DeviceGpu > 0 {
-		result.Gpu = postDevice.Spec.DeviceGpu
+
+	if result.Gpu == 0 && serverConfig.UseDefaultGpuConfigWhenZeroIsGiven {
+		result.Gpu = serverConfig.DefaultGpuPerDevice
 	}
 
 	if postDevice.Spec.GpuDriver != "" {

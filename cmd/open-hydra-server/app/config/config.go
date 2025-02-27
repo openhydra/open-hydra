@@ -87,29 +87,30 @@ type (
 		// if not set we won't be able to start gpu pod at all
 		DefaultGpuDriver string `json:"default_gpu_driver,omitempty" yaml:"defaultGpuDriver,omitempty"`
 		// gpu resource keys that predefine for open-hydra-server to discover gpu resource
-		GpuResourceKeys                []string          `json:"gpu_resource_keys,omitempty" yaml:"gpuResourceKeys,omitempty"`
-		ServerIP                       string            `json:"server_ip" yaml:"serverIP"`
-		EnableJupyterLabBaseURL        bool              `json:"enable_jupyter_lab_base_url" yaml:"enableJupyterLabBaseURL"`
-		ApplyPortNameForIngress        map[string]string `json:"apply_port_name_for_ingress,omitempty" yaml:"applyPortNameForIngress,omitempty"`
-		IngressPort                    uint16            `json:"ingress_port,omitempty" yaml:"ingressPort,omitempty"`
-		KubeConfig                     *rest.Config
-		LeaderElection                 *LeaderElection     `json:"leader_election,omitempty" yaml:"leaderElection,omitempty"`
-		MySqlConfig                    *MySqlConfig        `json:"mysql_config,omitempty" yaml:"mysqlConfig,omitempty"`
-		EtcdConfig                     *EtcdConfig         `json:"etcd_config,omitempty" yaml:"etcdConfig,omitempty"`
-		DBType                         string              `json:"db_type,omitempty" yaml:"dbType,omitempty"`
-		DisableAuth                    bool                `json:"disable_auth" yaml:"disableAuth"`
-		PatchResourceNotRelease        bool                `json:"patch_resource_not_release,omitempty" yaml:"patchResourceNotRelease,omitempty"`
-		CpuOverCommitRate              uint8               `json:"cpu_over_commit_rate,omitempty" yaml:"cpuOverCommitRate,omitempty"`
-		MemoryOverCommitRate           uint8               `json:"memory_over_commit_rate,omitempty" yaml:"memoryOverCommitRate,omitempty"`
-		AuthDelegateConfig             *AuthDelegateConfig `json:"auth_delegate_config,omitempty" yaml:"authDelegateConfig,omitempty"`
-		MaximumPortsPerSandbox         uint8               `json:"maximum_ports_per_sandbox,omitempty" yaml:"maximumPortsPerSandbox,omitempty"`
-		WorkspacePath                  string              `json:"workspace_path,omitempty" yaml:"workspacePath,omitempty"`
-		KubeClientConfig               *KubeClientConfig   `json:"kube_client_config,omitempty" yaml:"kubeClientConfig,omitempty"`
-		AddProjectResource             bool                `json:"add_project_resource,omitempty" yaml:"addProjectResource,omitempty"`
-		ProjectDatasetBasePath         string              `json:"project_dataset_base_path,omitempty" yaml:"projectDatasetBasePath,omitempty"`
-		ProjectCourseBasePath          string              `json:"project_course_base_path,omitempty" yaml:"projectCourseBasePath,omitempty"`
-		ProjectDatasetStudentMountPath string              `json:"project_dataset_student_mount_path,omitempty" yaml:"projectDatasetStudentMountPath,omitempty"`
-		ProjectCourseStudentMountPath  string              `json:"project_course_student_mount_path,omitempty" yaml:"projectCourseStudentMountPath,omitempty"`
+		GpuResourceKeys                    []string          `json:"gpu_resource_keys,omitempty" yaml:"gpuResourceKeys,omitempty"`
+		ServerIP                           string            `json:"server_ip" yaml:"serverIP"`
+		EnableJupyterLabBaseURL            bool              `json:"enable_jupyter_lab_base_url" yaml:"enableJupyterLabBaseURL"`
+		ApplyPortNameForIngress            map[string]string `json:"apply_port_name_for_ingress,omitempty" yaml:"applyPortNameForIngress,omitempty"`
+		IngressPort                        uint16            `json:"ingress_port,omitempty" yaml:"ingressPort,omitempty"`
+		KubeConfig                         *rest.Config
+		LeaderElection                     *LeaderElection     `json:"leader_election,omitempty" yaml:"leaderElection,omitempty"`
+		MySqlConfig                        *MySqlConfig        `json:"mysql_config,omitempty" yaml:"mysqlConfig,omitempty"`
+		EtcdConfig                         *EtcdConfig         `json:"etcd_config,omitempty" yaml:"etcdConfig,omitempty"`
+		DBType                             string              `json:"db_type,omitempty" yaml:"dbType,omitempty"`
+		DisableAuth                        bool                `json:"disable_auth" yaml:"disableAuth"`
+		PatchResourceNotRelease            bool                `json:"patch_resource_not_release,omitempty" yaml:"patchResourceNotRelease,omitempty"`
+		CpuOverCommitRate                  uint8               `json:"cpu_over_commit_rate,omitempty" yaml:"cpuOverCommitRate,omitempty"`
+		MemoryOverCommitRate               uint8               `json:"memory_over_commit_rate,omitempty" yaml:"memoryOverCommitRate,omitempty"`
+		AuthDelegateConfig                 *AuthDelegateConfig `json:"auth_delegate_config,omitempty" yaml:"authDelegateConfig,omitempty"`
+		MaximumPortsPerSandbox             uint8               `json:"maximum_ports_per_sandbox,omitempty" yaml:"maximumPortsPerSandbox,omitempty"`
+		WorkspacePath                      string              `json:"workspace_path,omitempty" yaml:"workspacePath,omitempty"`
+		KubeClientConfig                   *KubeClientConfig   `json:"kube_client_config,omitempty" yaml:"kubeClientConfig,omitempty"`
+		AddProjectResource                 bool                `json:"add_project_resource,omitempty" yaml:"addProjectResource,omitempty"`
+		ProjectDatasetBasePath             string              `json:"project_dataset_base_path,omitempty" yaml:"projectDatasetBasePath,omitempty"`
+		ProjectCourseBasePath              string              `json:"project_course_base_path,omitempty" yaml:"projectCourseBasePath,omitempty"`
+		ProjectDatasetStudentMountPath     string              `json:"project_dataset_student_mount_path,omitempty" yaml:"projectDatasetStudentMountPath,omitempty"`
+		ProjectCourseStudentMountPath      string              `json:"project_course_student_mount_path,omitempty" yaml:"projectCourseStudentMountPath,omitempty"`
+		UseDefaultGpuConfigWhenZeroIsGiven bool                `json:"use_default_gpu_config_when_zero_is_given,omitempty" yaml:"useDefaultGpuConfigWhenZeroIsGiven,omitempty"`
 	}
 )
 
@@ -126,34 +127,35 @@ func DefaultLeaderElection() *LeaderElection {
 
 func DefaultConfig() *OpenHydraServerConfig {
 	return &OpenHydraServerConfig{
-		PodAllocatableLimit:            -1,
-		DefaultCpuPerDevice:            2000,
-		DefaultRamPerDevice:            8192,
-		DefaultGpuPerDevice:            0,
-		PublicDatasetBasePath:          "/mnt/public-dataset",
-		PublicCourseBasePath:           "/mnt/public-course",
-		PublicDatasetMaxSize:           1 << 30, // 1 GiB
-		PublicCourseMaxSize:            1 << 30, // 1 GiB
-		PublicDatasetVolumeType:        "hostpath",
-		PublicDatasetStudentMountPath:  "/root/notebook/dataset-public",
-		PublicCourseStudentMountPath:   "/root/notebook/course-public",
-		MySqlConfig:                    DefaultMySqlConfig(),
-		EtcdConfig:                     DefaultEtcdConfig(),
-		LeaderElection:                 DefaultLeaderElection(),
-		DefaultGpuDriver:               "nvidia.com/gpu",
-		GpuResourceKeys:                []string{"nvidia.com/gpu", "amd.com/gpu"},
-		ServerIP:                       "localhost",
-		CpuOverCommitRate:              1, // no over commit for cpu by default,set to 2 cpu request will be divide by 2
-		MemoryOverCommitRate:           1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2
-		MaximumPortsPerSandbox:         3,
-		WorkspacePath:                  "/mnt/workspace",
-		KubeClientConfig:               &KubeClientConfig{QPS: 100, Burst: 200},
-		ApplyPortNameForIngress:        map[string]string{"jupyter-lab": "lab"},
-		IngressPort:                    30006,
-		ProjectDatasetBasePath:         "/mnt/project-dataset",
-		ProjectCourseBasePath:          "/mnt/project-course",
-		ProjectDatasetStudentMountPath: "/root/notebook/dataset-project",
-		ProjectCourseStudentMountPath:  "/root/notebook/course-project",
+		PodAllocatableLimit:                -1,
+		DefaultCpuPerDevice:                2000,
+		DefaultRamPerDevice:                8192,
+		DefaultGpuPerDevice:                0,
+		PublicDatasetBasePath:              "/mnt/public-dataset",
+		PublicCourseBasePath:               "/mnt/public-course",
+		PublicDatasetMaxSize:               1 << 30, // 1 GiB
+		PublicCourseMaxSize:                1 << 30, // 1 GiB
+		PublicDatasetVolumeType:            "hostpath",
+		PublicDatasetStudentMountPath:      "/root/notebook/dataset-public",
+		PublicCourseStudentMountPath:       "/root/notebook/course-public",
+		MySqlConfig:                        DefaultMySqlConfig(),
+		EtcdConfig:                         DefaultEtcdConfig(),
+		LeaderElection:                     DefaultLeaderElection(),
+		DefaultGpuDriver:                   "nvidia.com/gpu",
+		GpuResourceKeys:                    []string{"nvidia.com/gpu", "amd.com/gpu"},
+		ServerIP:                           "localhost",
+		CpuOverCommitRate:                  1, // no over commit for cpu by default,set to 2 cpu request will be divide by 2
+		MemoryOverCommitRate:               1, // no over commit for memory by default,set to 2 meaning memory request will be divide by 2
+		MaximumPortsPerSandbox:             3,
+		WorkspacePath:                      "/mnt/workspace",
+		KubeClientConfig:                   &KubeClientConfig{QPS: 100, Burst: 200},
+		ApplyPortNameForIngress:            map[string]string{"jupyter-lab": "lab"},
+		IngressPort:                        30006,
+		ProjectDatasetBasePath:             "/mnt/project-dataset",
+		ProjectCourseBasePath:              "/mnt/project-course",
+		ProjectDatasetStudentMountPath:     "/root/notebook/dataset-project",
+		ProjectCourseStudentMountPath:      "/root/notebook/course-project",
+		UseDefaultGpuConfigWhenZeroIsGiven: false,
 	}
 }
 
