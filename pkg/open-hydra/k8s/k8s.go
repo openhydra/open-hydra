@@ -205,7 +205,7 @@ func createDeployment(deployParameter *DeploymentParameters) *appsV1.Deployment 
 				},
 				Spec: coreV1.PodSpec{
 					Volumes:    createVolume(deployParameter.Volumes),
-					Containers: createContainers(baseName, deployParameter.Image, deployParameter.Username, deployParameter.VolumeMounts, resourceReq, resourceLim, deployParameter.Command, deployParameter.Args, deployParameter.Ports),
+					Containers: createContainers(baseName, deployParameter.Image, deployParameter.Username, deployParameter.VolumeMounts, resourceReq, resourceLim, deployParameter.Command, deployParameter.Args, deployParameter.Ports, deployParameter.CustomLabels),
 				},
 			},
 		},
@@ -258,7 +258,7 @@ func createResource(cpuMemorySet CpuMemorySet, gpuSet apis.GpuSet) (coreV1.Resou
 	return resourceReq, resourceLim
 }
 
-func createContainers(baseName, image, username string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList, command, args []string, ports map[string]int) []coreV1.Container {
+func createContainers(baseName, image, username string, volumes []apis.VolumeMount, resourceReq, resourceLimit coreV1.ResourceList, command, args []string, ports map[string]int, additionalLabels map[string]string) []coreV1.Container {
 	container := coreV1.Container{
 		Name:            baseName + "-container",
 		Image:           image,
@@ -281,6 +281,18 @@ func createContainers(baseName, image, username string, volumes []apis.VolumeMou
 			Value: fmt.Sprintf("%s-%s", username, name),
 		})
 	}
+
+	if _, ok := additionalLabels["openhydra-jupyter-lab-token"]; ok {
+		envs = append(envs, coreV1.EnvVar{
+			Name:  "OPENHYDRA_JUPYTER_LAB_TOKEN",
+			Value: additionalLabels["openhydra-jupyter-lab-token"],
+		})
+	}
+
+	envs = append(envs, coreV1.EnvVar{
+		Name:  "OPENHYDRA_USER",
+		Value: username,
+	})
 
 	container.Ports = portsExported
 	container.Env = envs

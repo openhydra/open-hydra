@@ -133,7 +133,7 @@ var _ = Describe("K8s", func() {
 		It("should be expected", func() {
 			baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, deployParameter.Username)
 			reqRequest, limRequest := createResource(cpuMemorySet, gpuSet)
-			containers := createContainers(baseName, deployParameter.Image, "", deployParameter.VolumeMounts, reqRequest, limRequest, deployParameter.Command, deployParameter.Args, deployParameter.Ports)
+			containers := createContainers(baseName, deployParameter.Image, "", deployParameter.VolumeMounts, reqRequest, limRequest, deployParameter.Command, deployParameter.Args, deployParameter.Ports, deployParameter.CustomLabels)
 			Expect(containers[0].Name).To(Equal(fmt.Sprintf("%s-%s", baseName, "container")))
 			Expect(containers[0].Image).To(Equal(deployParameter.Image))
 			Expect(containers[0].VolumeMounts[0].Name).To(Equal("test"))
@@ -150,7 +150,7 @@ var _ = Describe("K8s", func() {
 			deployParameter.Args = nil
 			baseName := fmt.Sprintf(OpenHydraDeployNameTemplate, deployParameter.Username)
 			reqRequest, limRequest := createResource(cpuMemorySet, gpuSet)
-			containers := createContainers(baseName, deployParameter.Image, "", deployParameter.VolumeMounts, reqRequest, limRequest, deployParameter.Command, deployParameter.Args, deployParameter.Ports)
+			containers := createContainers(baseName, deployParameter.Image, "", deployParameter.VolumeMounts, reqRequest, limRequest, deployParameter.Command, deployParameter.Args, deployParameter.Ports, deployParameter.CustomLabels)
 			Expect(containers[0].Name).To(Equal(fmt.Sprintf("%s-%s", baseName, "container")))
 			Expect(containers[0].Image).To(Equal(deployParameter.Image))
 			Expect(containers[0].VolumeMounts[0].Name).To(Equal("test"))
