@@ -296,6 +296,20 @@ func createContainers(baseName, image, username string, volumes []apis.VolumeMou
 		})
 	}
 
+	if _, ok := additionalLabels["openhydra-server-address"]; ok {
+		envs = append(envs, coreV1.EnvVar{
+			Name:  "OPENHYDRA_SERVER_ADDRESS",
+			Value: additionalLabels["openhydra-server-address"],
+		})
+	}
+
+	if _, ok := additionalLabels["openhydra-heartbeat-lost-interval"]; ok {
+		envs = append(envs, coreV1.EnvVar{
+			Name:  "OPENHYDRA_HEARTBEAT_LOST_INTERVAL",
+			Value: additionalLabels["openhydra-heartbeat-lost-interval"],
+		})
+	}
+
 	envs = append(envs, coreV1.EnvVar{
 		Name:  "OPENHYDRA_USER",
 		Value: username,
