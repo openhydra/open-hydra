@@ -289,6 +289,13 @@ func createContainers(baseName, image, username string, volumes []apis.VolumeMou
 		})
 	}
 
+	if _, ok := additionalLabels["openhydra-service-account-token"]; ok {
+		envs = append(envs, coreV1.EnvVar{
+			Name:  "OPENHYDRA_SERVICE_ACCOUNT",
+			Value: additionalLabels["openhydra-service-account-token"],
+		})
+	}
+
 	envs = append(envs, coreV1.EnvVar{
 		Name:  "OPENHYDRA_USER",
 		Value: username,
