@@ -78,8 +78,8 @@ func combineDeviceList(pods []coreV1.Pod, services []coreV1.Service, users xUser
 		if _, found := podFlat[user.Name]; found {
 			// only fill up device if we found a pod
 			device.Labels = podFlat[user.Name].Labels
-			device.Spec.DeviceCpu = podFlat[user.Name].Spec.Containers[0].Resources.Requests.Cpu().String()
-			device.Spec.DeviceRam = podFlat[user.Name].Spec.Containers[0].Resources.Requests.Memory().String()
+			device.Spec.DeviceCpu = podFlat[user.Name].Spec.Containers[0].Resources.Limits.Cpu().String()
+			device.Spec.DeviceRam = podFlat[user.Name].Spec.Containers[0].Resources.Limits.Memory().String()
 			device.Spec.DeviceIP = podFlat[user.Name].Status.PodIP
 			device.Spec.DeviceName = podFlat[user.Name].Name
 			device.Spec.DeviceNamespace = podFlat[user.Name].Namespace
